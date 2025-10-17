@@ -9,15 +9,15 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
 
   // JWT
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').default('change-this-insecure-default-jwt-secret-key-minimum-32-chars'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
   // Server
   PORT: z.string().default('3001').transform(Number),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
 
   // CORS
-  ALLOWED_ORIGINS: z.string().transform((val) => val.split(',')),
+  ALLOWED_ORIGINS: z.string().default('*').transform((val) => val.split(',')),
 
   // Uploads
   MAX_UPLOAD_MB: z.string().default('200').transform(Number),
@@ -28,7 +28,7 @@ const envSchema = z.object({
   SHEETS_SERVICE_ACCOUNT_JSON: z.string().optional(),
 
   // OpenRouter AI
-  OPENROUTER_API_KEY: z.string(),
+  OPENROUTER_API_KEY: z.string().optional(),
   OPENROUTER_MODEL: z.string().default('anthropic/claude-3.5-sonnet'),
   OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
 
