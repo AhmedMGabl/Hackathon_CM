@@ -4,8 +4,8 @@ FROM node:18-alpine AS server-builder
 
 WORKDIR /app
 
-# Copy root package files
-COPY package*.json ./
+# Copy root package.json (defines workspaces)
+COPY package.json ./
 COPY server/package*.json ./server/
 
 # Install dependencies
@@ -25,8 +25,8 @@ FROM node:18-alpine AS client-builder
 
 WORKDIR /app
 
-# Copy root package files
-COPY package*.json ./
+# Copy root package.json (defines workspaces)
+COPY package.json ./
 COPY client/package*.json ./client/
 
 # Install dependencies
@@ -43,9 +43,11 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install production dependencies only
-COPY package*.json ./
+# Copy root package.json (defines workspaces)
+COPY package.json ./
 COPY server/package*.json ./server/
+
+# Install production dependencies only
 RUN npm install --workspace=server --omit=dev
 
 # Copy built server
