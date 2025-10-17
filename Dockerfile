@@ -6,16 +6,12 @@ WORKDIR /app
 
 # Copy root package.json (defines workspaces)
 COPY package.json ./
-COPY server/package*.json ./server/
 
-# Install dependencies
-RUN npm install --workspace=server --include=dev
-
-# Copy server source
+# Copy server files (needed before install for prisma generate)
 COPY server ./server
 
-# Generate Prisma client
-RUN npm run generate --workspace=server
+# Install dependencies (this will trigger prisma generate via postinstall)
+RUN npm install --workspace=server --include=dev
 
 # Build server
 RUN npm run build --workspace=server
@@ -27,13 +23,12 @@ WORKDIR /app
 
 # Copy root package.json (defines workspaces)
 COPY package.json ./
-COPY client/package*.json ./client/
+
+# Copy client files
+COPY client ./client
 
 # Install dependencies
 RUN npm install --workspace=client --include=dev
-
-# Copy client source
-COPY client ./client
 
 # Build client
 RUN npm run build --workspace=client
@@ -45,15 +40,16 @@ WORKDIR /app
 
 # Copy root package.json (defines workspaces)
 COPY package.json ./
-COPY server/package*.json ./server/
 
-# Install production dependencies only
+# Copy server package.json and prisma files (needed for postinstall)
+COPY server/package*.json ./server/
+COPY server/prisma ./server/prisma
+
+# Install production dependencies only (this will trigger prisma generate)
 RUN npm install --workspace=server --omit=dev
 
 # Copy built server
 COPY --from=server-builder /app/server/dist ./server/dist
-COPY --from=server-builder /app/server/prisma ./server/prisma
-COPY --from=server-builder /app/server/node_modules/.prisma ./server/node_modules/.prisma
 
 # Copy built client (served as static files)
 COPY --from=client-builder /app/client/dist ./client/dist
