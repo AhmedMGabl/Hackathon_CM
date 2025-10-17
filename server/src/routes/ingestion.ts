@@ -52,7 +52,7 @@ const sheetsIngestSchema = z.object({
 router.post(
   '/upload',
   authenticate,
-  requireRole(['ADMIN']),
+  requireRole('ADMIN'),
   upload.single('file'),
   async (req, res, next) => {
     try {
@@ -102,7 +102,7 @@ router.post(
  * POST /api/ingestion/sheets
  * Ingest from Google Sheets
  */
-router.post('/sheets', authenticate, requireRole(['ADMIN']), async (req, res, next) => {
+router.post('/sheets', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
     const body = sheetsIngestSchema.safeParse(req.body);
 

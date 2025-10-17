@@ -97,7 +97,7 @@ router.get('/', authenticate, async (req, res, next) => {
  * POST /api/alerts/dismiss
  * Dismiss multiple alerts
  */
-router.post('/dismiss', authenticate, requireRole(['ADMIN', 'LEADER']), async (req, res, next) => {
+router.post('/dismiss', authenticate, requireRole('ADMIN', 'LEADER'), async (req, res, next) => {
   try {
     const body = dismissSchema.safeParse(req.body);
     if (!body.success) {
@@ -145,7 +145,7 @@ router.post('/dismiss', authenticate, requireRole(['ADMIN', 'LEADER']), async (r
  * POST /api/alerts/assign
  * Assign alert to a user
  */
-router.post('/assign', authenticate, requireRole(['ADMIN', 'LEADER']), async (req, res, next) => {
+router.post('/assign', authenticate, requireRole('ADMIN', 'LEADER'), async (req, res, next) => {
   try {
     const body = assignSchema.safeParse(req.body);
     if (!body.success) {

@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 import { env } from '../config/env.js';
 import { authenticate } from '../middleware/auth.js';
 
@@ -63,16 +64,18 @@ router.post('/login', async (req, res, next) => {
     }
 
     // Generate JWT
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        teamId: user.teamId,
-      },
-      env.JWT_SECRET,
-      { expiresIn: env.JWT_EXPIRES_IN }
-    );
+    const tokenPayload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      teamId: user.teamId,
+    };
+
+    const signOptions: SignOptions = {
+      expiresIn: env.JWT_EXPIRES_IN as StringValue | number,
+    };
+
+    const token = jwt.sign(tokenPayload, env.JWT_SECRET, signOptions);
 
     // Set HttpOnly cookie
     res.cookie('token', token, {

@@ -90,7 +90,7 @@ router.get('/', authenticate, async (req, res, next) => {
  * PUT /api/config
  * Update configuration (admin only)
  */
-router.put('/', authenticate, requireRole(['ADMIN']), async (req, res, next) => {
+router.put('/', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
     const body = configSchema.safeParse(req.body);
 
