@@ -96,12 +96,6 @@ export default function TargetsTracker() {
   const weightSum = calculateWeightSum();
   const isWeightValid = weightSum === 100;
 
-  const getPacingMultiplier = (week: number, currentWeek: number) => {
-    if (!editedConfig) return 1;
-    const weeksRemaining = 5 - currentWeek;
-    return week <= currentWeek ? 1 / weeksRemaining : 0;
-  };
-
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: tokens.colors.surface.dark, padding: '24px' }}>
