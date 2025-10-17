@@ -1,26 +1,30 @@
 import { Router } from 'express';
 import healthRoutes from './health.js';
+import ingestionRoutes from './ingestion.js';
+import configRoutes from './config.js';
 // TODO PASS 2: Import remaining routes
-// import authRoutes from './auth';
-// import ingestionRoutes from './ingestion';
-// import agentRoutes from './agents';
-// import teamRoutes from './teams';
-// import targetRoutes from './targets';
-// import alertRoutes from './alerts';
-// import aiRoutes from './ai';
+// import authRoutes from './auth.js';
+// import mentorRoutes from './mentors.js';
+// import teamRoutes from './teams.js';
+// import alertRoutes from './alerts.js';
+// import aiRoutes from './ai.js';
 
 const router = Router();
 
 // Health check (no auth required)
 router.use(healthRoutes);
 
-// TODO PASS 2: Mount authenticated routes
+// Ingestion endpoints (auth required, handled in route file)
+router.use('/api/ingestion', ingestionRoutes);
+
+// Config endpoints (auth required, handled in route file)
+router.use('/api/config', configRoutes);
+
+// TODO PASS 2: Mount remaining authenticated routes
 // router.use('/api/auth', authRoutes);
-// router.use('/api/ingestion', authenticate, ingestionRoutes);
-// router.use('/api/agents', authenticate, agentRoutes);
-// router.use('/api/teams', authenticate, teamRoutes);
-// router.use('/api/targets', authenticate, targetRoutes);
-// router.use('/api/alerts', authenticate, alertRoutes);
-// router.use('/api/ai', authenticate, aiRoutes);
+// router.use('/api/mentors', mentorRoutes);
+// router.use('/api/teams', teamRoutes);
+// router.use('/api/alerts', alertRoutes);
+// router.use('/api/ai', aiRoutes);
 
 export default router;
