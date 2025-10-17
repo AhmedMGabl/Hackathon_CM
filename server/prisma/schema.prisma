@@ -1,0 +1,227 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User authentication and authorization
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      Role     @default(LEADER)
+  teamId    String?
+  team      Team?    @relation(fields: [teamId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([teamId])
+}
+
+enum Role {
+  ADMIN
+  LEADER
+}
+
+// Team hierarchy
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users   User[]
+  agents  Agent[]
+  targets Target[]
+
+  @@index([name])
+}
+
+// Agent performance data
+model Agent {
+  id        String   @id @default(cuid())
+  agentId   String   @unique // External ID from Excel/Sheets
+  agentName String
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  metrics MetricSnapshot[]
+
+  @@index([agentId])
+  @@index([teamId])
+  @@index([agentName])
+}
+
+// Time-series metrics for each agent
+model MetricSnapshot {
+  id        String   @id @default(cuid())
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  period    DateTime // Start of period (e.g., 2025-10-01 for October)
+  weekOfMonth Int?   // 1-4 for weekly pacing
+
+  // Core metrics (percentages stored as 0-100)
+  ccPct     Float? // Class Consumption %
+  scPct     Float? // Super-CC %
+  upPct     Float? // Upgrade %
+  fixedPct  Float? // Fixed %
+
+  // Referral funnel
+  referralLeads     Int?
+  referralShowups   Int?
+  referralPaid      Int?
+  referralAchievementPct Float? // Calculated
+
+  // Lead recovery
+  totalLeads       Int?
+  recoveredLeads   Int?
+  unrecoveredLeads Int?
+  unrecoveredNotes String[] // JSON array of notes
+  conversionPct    Float?   // recovered ÷ total
+
+  // Computed values
+  weightedScore Float?   // Calculated based on active target config
+  targetsHit    Int?     // 0-4 count of targets achieved
+  status        Status?  // ABOVE, WARNING, BELOW
+
+  // Ingestion metadata
+  ingestionId   String?  // Links to ingestion batch
+  checksum      String?  // For deduplication
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agentId, period, weekOfMonth])
+  @@index([agentId, period])
+  @@index([period])
+  @@index([status])
+}
+
+enum Status {
+  ABOVE
+  WARNING
+  BELOW
+}
+
+// Target configuration (admin-managed)
+model Target {
+  id        String   @id @default(cuid())
+  teamId    String?  // null = global default
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  period    DateTime // Which month/quarter these apply to
+
+  // Monthly targets (percentages stored as 0-100)
+  ccTarget    Float @default(80)
+  scTarget    Float @default(15)
+  upTarget    Float @default(25)
+  fixedTarget Float @default(60)
+
+  // Detail targets
+  referralAchievementTarget Float @default(80)
+  conversionTarget          Float @default(30)
+
+  // Status thresholds (percentages)
+  aboveThreshold   Float @default(100) // ≥100% of target
+  warningThreshold Float @default(90)  // ≥90% of target
+
+  // Weights for composite score (must sum to 100)
+  ccWeight    Float @default(25)
+  scWeight    Float @default(25)
+  upWeight    Float @default(25)
+  fixedWeight Float @default(25)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, period])
+  @@index([period])
+}
+
+// Alert rule definitions
+model AlertRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  enabled     Boolean  @default(true)
+
+  // Rule type and parameters (JSON-encoded conditions)
+  ruleType    AlertRuleType
+  conditions  Json // { metric, threshold, consecutivePeriods, variance, etc. }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  triggeredAlerts Alert[]
+
+  @@index([enabled])
+}
+
+enum AlertRuleType {
+  BELOW_TARGET       // Below target by X% for Y consecutive periods
+  MISSING_DATA       // Missing data for Z periods
+  VARIANCE_SPIKE     // Sudden variance increase
+}
+
+// Triggered alerts
+model Alert {
+  id          String   @id @default(cuid())
+  ruleId      String
+  rule        AlertRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  agentId     String   // Not FK to allow orphaned alerts
+  agentName   String
+  teamName    String
+  period      DateTime
+  severity    Severity
+  message     String
+  metadata    Json?    // Additional context
+  dismissed   Boolean  @default(false)
+  dismissedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([ruleId])
+  @@index([agentId, period])
+  @@index([dismissed, createdAt])
+  @@index([severity])
+}
+
+enum Severity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+// Ingestion audit log
+model IngestionLog {
+  id           String   @id @default(cuid())
+  source       String   // "cc_file", "fixed_file", "google_sheets", etc.
+  sourceDetail String?  // filename or spreadsheetId
+  status       IngestionStatus
+  recordsProcessed Int
+  recordsAccepted  Int
+  recordsRejected  Int
+  errors       Json?    // Array of error objects
+  checksum     String?  // For duplicate detection
+  uploadedBy   String?  // User ID
+  createdAt    DateTime @default(now())
+
+  @@index([source, createdAt])
+  @@index([status])
+}
+
+enum IngestionStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
+}

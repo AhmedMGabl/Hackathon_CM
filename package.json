@@ -1,0 +1,29 @@
+{
+  "name": "hackathon-cm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Operations analytics platform with AI-powered coaching",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "start": "npm run start --workspace=server",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "migrate": "npm run migrate --workspace=server",
+    "seed": "npm run seed --workspace=server",
+    "postinstall": "npm run postinstall --workspace=server --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
