@@ -1,191 +1,358 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import {
+  calculateWeightedScore,
+  calculateStatus,
+  countTargetsHit,
+  type TargetConfig,
+} from '../src/utils/metrics.js';
 
 const prisma = new PrismaClient();
 
+// Mentor names for realistic data
+const MENTOR_NAMES = [
+  'Emma Thompson', 'Liam Chen', 'Sophia Rodriguez', 'Noah Kim', 'Olivia Patel', 'Ethan Singh',
+  'Ava Martinez', 'Mason Lee', 'Isabella Garcia', 'Lucas Johnson', 'Mia Williams', 'Alexander Brown',
+  'Charlotte Davis', 'James Wilson', 'Amelia Miller', 'Benjamin Taylor', 'Harper Anderson', 'Elijah Thomas',
+];
+
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('🌱 Seeding CMetrics database...\n');
+
+  // Clear existing data in correct order
+  console.log('📦 Clearing existing data...');
+  await prisma.alert.deleteMany();
+  await prisma.alertRule.deleteMany();
+  await prisma.upload.deleteMany();
+  await prisma.metricDaily.deleteMany();
+  await prisma.mentor.deleteMany();
+  await prisma.config.deleteMany();
+  await prisma.target.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.team.deleteMany();
 
   // Create teams
-  const salesTeam = await prisma.team.upsert({
-    where: { name: 'Sales Team Alpha' },
-    update: {},
-    create: {
-      name: 'Sales Team Alpha',
-      description: 'Primary sales team',
-    },
-  });
-
-  const supportTeam = await prisma.team.upsert({
-    where: { name: 'Support Team Beta' },
-    update: {},
-    create: {
-      name: 'Support Team Beta',
-      description: 'Customer support team',
-    },
-  });
-
-  // Create admin user
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
-    create: {
-      email: 'admin@example.com',
-      password: adminPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'ADMIN',
-    },
-  });
-
-  // Create team leader
-  const leaderPassword = await bcrypt.hash('leader123', 10);
-  const leader = await prisma.user.upsert({
-    where: { email: 'leader@example.com' },
-    update: {},
-    create: {
-      email: 'leader@example.com',
-      password: leaderPassword,
-      firstName: 'Team',
-      lastName: 'Leader',
-      role: 'LEADER',
-      teamId: salesTeam.id,
-    },
-  });
-
-  // Create sample agents
-  const agents = await Promise.all([
-    prisma.agent.upsert({
-      where: { agentId: 'AGT001' },
-      update: {},
-      create: {
-        agentId: 'AGT001',
-        agentName: 'Kiran Patel',
-        teamId: salesTeam.id,
-      },
+  console.log('👥 Creating teams...');
+  const teams = await Promise.all([
+    prisma.team.create({
+      data: { name: 'Alpha Squad', description: 'High-performance course mentoring team' },
     }),
-    prisma.agent.upsert({
-      where: { agentId: 'AGT002' },
-      update: {},
-      create: {
-        agentId: 'AGT002',
-        agentName: 'Aisha Khan',
-        teamId: salesTeam.id,
-      },
+    prisma.team.create({
+      data: { name: 'Beta Force', description: 'Student retention specialists' },
     }),
-    prisma.agent.upsert({
-      where: { agentId: 'AGT003' },
-      update: {},
-      create: {
-        agentId: 'AGT003',
-        agentName: 'Marcus Chen',
-        teamId: supportTeam.id,
-      },
+    prisma.team.create({
+      data: { name: 'Gamma Unit', description: 'Growth and expansion mentors' },
     }),
   ]);
+  console.log(`✅ Created ${teams.length} teams`);
 
-  // Create default target configuration
-  const now = new Date();
-  const currentPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Create users
+  console.log('🔐 Creating users...');
+  const hashedPassword = await bcrypt.hash('admin123', 10);
 
-  await prisma.target.upsert({
-    where: {
-      teamId_period: {
-        teamId: salesTeam.id,
-        period: currentPeriod,
-      },
+  const admin = await prisma.user.create({
+    data: {
+      email: 'admin@cmetrics.io',
+      password: hashedPassword,
+      firstName: 'Admin',
+      lastName: 'User',
+      role: Role.ADMIN,
     },
-    update: {},
-    create: {
-      teamId: salesTeam.id,
-      period: currentPeriod,
+  });
+
+  const leaders = await Promise.all(
+    teams.slice(0, 2).map((team, idx) =>
+      prisma.user.create({
+        data: {
+          email: `leader${idx + 1}@cmetrics.io`,
+          password: hashedPassword,
+          firstName: `Team`,
+          lastName: `Leader ${idx + 1}`,
+          role: Role.LEADER,
+          teamId: team.id,
+        },
+      })
+    )
+  );
+  console.log(`✅ Created 1 admin + ${leaders.length} leaders`);
+
+  // Create global config
+  console.log('⚙️  Creating global configuration...');
+  const globalConfig = await prisma.config.create({
+    data: {
+      teamId: null, // Global default
       ccTarget: 80,
       scTarget: 15,
       upTarget: 25,
       fixedTarget: 60,
       referralAchievementTarget: 80,
       conversionTarget: 30,
-      aboveThreshold: 100,
-      warningThreshold: 90,
-      ccWeight: 25,
+      ccWeight: 30,
       scWeight: 25,
       upWeight: 25,
-      fixedWeight: 25,
-    },
-  });
-
-  // Create sample metric snapshots with realistic data
-  const weeklyData = [
-    { week: 1, cc: 75, sc: 12, up: 20, fixed: 55 },
-    { week: 2, cc: 82, sc: 16, up: 28, fixed: 62 },
-    { week: 3, cc: 88, sc: 18, up: 30, fixed: 68 },
-    { week: 4, cc: 92, sc: 20, up: 32, fixed: 72 },
-  ];
-
-  for (const agent of agents) {
-    for (const data of weeklyData) {
-      await prisma.metricSnapshot.upsert({
-        where: {
-          agentId_period_weekOfMonth: {
-            agentId: agent.id,
-            period: currentPeriod,
-            weekOfMonth: data.week,
-          },
-        },
-        update: {},
-        create: {
-          agentId: agent.id,
-          period: currentPeriod,
-          weekOfMonth: data.week,
-          ccPct: data.cc + Math.random() * 5,
-          scPct: data.sc + Math.random() * 3,
-          upPct: data.up + Math.random() * 4,
-          fixedPct: data.fixed + Math.random() * 5,
-          referralLeads: Math.floor(20 + Math.random() * 10),
-          referralShowups: Math.floor(15 + Math.random() * 8),
-          referralPaid: Math.floor(10 + Math.random() * 5),
-          referralAchievementPct: 75 + Math.random() * 15,
-          totalLeads: Math.floor(50 + Math.random() * 20),
-          recoveredLeads: Math.floor(15 + Math.random() * 10),
-          unrecoveredLeads: Math.floor(30 + Math.random() * 10),
-          unrecoveredNotes: ['Follow up needed', 'Rescheduled'],
-          conversionPct: 25 + Math.random() * 10,
-          weightedScore: 0.85 + Math.random() * 0.15,
-          targetsHit: data.week >= 3 ? 3 : 2,
-          status: data.week >= 3 ? 'ABOVE' : 'WARNING',
-        },
-      });
-    }
-  }
-
-  // Create sample alert rules
-  await prisma.alertRule.upsert({
-    where: { id: 'rule-below-target' },
-    update: {},
-    create: {
-      id: 'rule-below-target',
-      name: 'Below Target Alert',
-      description: 'Triggers when agent is below target for 2 consecutive weeks',
-      enabled: true,
-      ruleType: 'BELOW_TARGET',
-      conditions: {
-        metric: 'weightedScore',
-        threshold: 90,
-        consecutivePeriods: 2,
+      fixedWeight: 20,
+      aboveThreshold: 100,
+      warningThreshold: 90,
+      pacingWeek: 4,
+      alertThresholds: {
+        belowTargetPct: 70,
+        consecutivePeriods: 3,
+        missingDataDays: 2,
+        varianceThreshold: 30,
       },
     },
   });
+  console.log('✅ Created global config');
 
-  console.log('✅ Seeding completed!');
-  console.log('\n📝 Login credentials:');
-  console.log('Admin: admin@example.com / admin123');
-  console.log('Leader: leader@example.com / leader123');
+  // Create mentors (18 per team = 54 total)
+  console.log(`👨‍🏫 Creating mentors (${MENTOR_NAMES.length} per team)...`);
+  const allMentors: any[] = [];
+  for (const team of teams) {
+    for (let i = 0; i < MENTOR_NAMES.length; i++) {
+      const mentor = await prisma.mentor.create({
+        data: {
+          mentorId: `CM-${team.name.substring(0, 3).toUpperCase()}-${String(i + 1).padStart(3, '0')}`,
+          mentorName: MENTOR_NAMES[i],
+          teamId: team.id,
+        },
+      });
+      allMentors.push({ ...mentor, teamName: team.name });
+    }
+  }
+  console.log(`✅ Created ${allMentors.length} mentors across ${teams.length} teams`);
+
+  // Generate 60 days of metrics for each mentor
+  console.log('📊 Generating 60 days of metrics per mentor...');
+  const daysToGenerate = 60;
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysToGenerate);
+
+  const targetConfig: TargetConfig = {
+    ccTarget: globalConfig.ccTarget,
+    scTarget: globalConfig.scTarget,
+    upTarget: globalConfig.upTarget,
+    fixedTarget: globalConfig.fixedTarget,
+    referralAchievementTarget: globalConfig.referralAchievementTarget,
+    conversionTarget: globalConfig.conversionTarget,
+    aboveThreshold: globalConfig.aboveThreshold,
+    warningThreshold: globalConfig.warningThreshold,
+    ccWeight: globalConfig.ccWeight,
+    scWeight: globalConfig.scWeight,
+    upWeight: globalConfig.upWeight,
+    fixedWeight: globalConfig.fixedWeight,
+  };
+
+  let totalMetrics = 0;
+  let belowTargetMentors: Array<{ mentor: any; periodDate: Date; weightedScore: number }> = [];
+  let missingDataMentors: Array<{ mentor: any; periodDate: Date }> = [];
+
+  for (const mentor of allMentors) {
+    // Determine mentor performance tier (some struggle, some excel, some average)
+    const performanceTier = Math.random();
+    const baseMultiplier = performanceTier < 0.2 ? 0.7 : performanceTier < 0.7 ? 0.95 : 1.15;
+
+    // Track consecutive days for missing data alerts
+    let consecutiveMissingDays = 0;
+
+    for (let day = 0; day < daysToGenerate; day++) {
+      const periodDate = new Date(startDate);
+      periodDate.setDate(periodDate.getDate() + day);
+
+      const weekOfMonth = Math.ceil(periodDate.getDate() / 7);
+
+      // 5% chance of missing data (intentionally for alerts)
+      if (Math.random() < 0.05) {
+        consecutiveMissingDays++;
+        if (consecutiveMissingDays >= 2) {
+          missingDataMentors.push({ mentor, periodDate });
+        }
+        continue; // Skip this day
+      } else {
+        consecutiveMissingDays = 0;
+      }
+
+      // Add realistic daily variance: ±5-15%
+      const dailyVariance = () => (Math.random() - 0.5) * (Math.random() < 0.1 ? 30 : 15); // 10% chance of high variance (for variance spike alerts)
+
+      // Base metrics with performance tier and trend (improve over time)
+      const trendFactor = 1 + (day / daysToGenerate) * 0.15; // 15% improvement trend over 60 days
+      const ccPct = Math.max(0, Math.min(100, 75 * baseMultiplier * trendFactor + dailyVariance()));
+      const scPct = Math.max(0, Math.min(100, 12 * baseMultiplier * trendFactor + dailyVariance()));
+      const upPct = Math.max(0, Math.min(100, 22 * baseMultiplier * trendFactor + dailyVariance()));
+      const fixedPct = Math.max(0, Math.min(100, 58 * baseMultiplier * trendFactor + dailyVariance()));
+
+      // Referral funnel
+      const referralLeads = Math.floor(Math.random() * 30) + 15;
+      const referralShowups = Math.floor(referralLeads * (0.55 + Math.random() * 0.3));
+      const referralPaid = Math.floor(referralShowups * (0.35 + Math.random() * 0.35));
+
+      // Lead recovery
+      const totalLeads = Math.floor(Math.random() * 80) + 40;
+      const recoveredLeads = Math.floor(totalLeads * (0.2 + Math.random() * 0.2) * baseMultiplier);
+      const unrecoveredLeads = totalLeads - recoveredLeads;
+
+      // Calculate weighted score
+      const weightedScore = calculateWeightedScore(
+        { ccPct, scPct, upPct, fixedPct },
+        targetConfig
+      );
+
+      // Calculate status
+      const status = calculateStatus(weightedScore, targetConfig);
+
+      // Count targets hit
+      const targetsHit = countTargetsHit({ ccPct, scPct, upPct, fixedPct }, targetConfig);
+
+      // Track mentors below target for alert triggers
+      if (status === 'BELOW') {
+        belowTargetMentors.push({ mentor, periodDate, weightedScore });
+      }
+
+      await prisma.metricDaily.create({
+        data: {
+          mentorId: mentor.id,
+          teamId: mentor.teamId,
+          periodDate,
+          weekOfMonth,
+          ccPct,
+          scPct,
+          upPct,
+          fixedPct,
+          referralLeads,
+          referralShowups,
+          referralPaid,
+          totalLeads,
+          recoveredLeads,
+          unrecoveredLeads,
+          notes: unrecoveredLeads > 40 ? ['High unrecovered volume', 'Needs review'] : [],
+          checksum: `${mentor.mentorId}:${periodDate.toISOString().split('T')[0]}`,
+        },
+      });
+
+      totalMetrics++;
+    }
+  }
+  console.log(`✅ Created ${totalMetrics} metric records`);
+
+  // Create alert rules
+  console.log('⚠️  Creating alert rules...');
+  const rules = await Promise.all([
+    prisma.alertRule.create({
+      data: {
+        name: 'Below Target - Critical',
+        description: 'Mentor performing below 70% of target for 3+ consecutive days',
+        enabled: true,
+        ruleType: 'BELOW_TARGET',
+        conditions: {
+          metric: 'weightedScore',
+          threshold: 70,
+          consecutivePeriods: 3,
+        },
+      },
+    }),
+    prisma.alertRule.create({
+      data: {
+        name: 'Missing Data',
+        description: 'No data submitted for 2+ consecutive days',
+        enabled: true,
+        ruleType: 'MISSING_DATA',
+        conditions: {
+          consecutivePeriods: 2,
+        },
+      },
+    }),
+    prisma.alertRule.create({
+      data: {
+        name: 'Variance Spike',
+        description: 'Performance variance spike detected (30%+ deviation)',
+        enabled: true,
+        ruleType: 'VARIANCE_SPIKE',
+        conditions: {
+          threshold: 30,
+        },
+      },
+    }),
+  ]);
+  console.log(`✅ Created ${rules.length} alert rules`);
+
+  // Trigger sample alerts
+  console.log('🚨 Triggering sample alerts...');
+  const belowTargetRule = rules.find((r) => r.ruleType === 'BELOW_TARGET')!;
+  const missingDataRule = rules.find((r) => r.ruleType === 'MISSING_DATA')!;
+
+  // Group below-target occurrences by mentor
+  const belowTargetByMentor = belowTargetMentors.reduce((acc, item) => {
+    if (!acc[item.mentor.id]) acc[item.mentor.id] = [];
+    acc[item.mentor.id].push(item);
+    return acc;
+  }, {} as Record<string, typeof belowTargetMentors>);
+
+  // Find mentors with 3+ consecutive below-target days
+  let triggeredBelowTargetAlerts = 0;
+  for (const [mentorId, occurrences] of Object.entries(belowTargetByMentor)) {
+    if (occurrences.length >= 3) {
+      const latest = occurrences[occurrences.length - 1];
+      await prisma.alert.create({
+        data: {
+          ruleId: belowTargetRule.id,
+          mentorId: latest.mentor.id,
+          mentorName: latest.mentor.mentorName,
+          teamName: latest.mentor.teamName,
+          period: latest.periodDate,
+          severity: 'CRITICAL',
+          message: `${latest.mentor.mentorName} is performing below target threshold (${latest.weightedScore.toFixed(1)}% for ${occurrences.length} consecutive days)`,
+          metadata: {
+            weightedScore: latest.weightedScore,
+            consecutiveDays: occurrences.length,
+          },
+        },
+      });
+      triggeredBelowTargetAlerts++;
+    }
+  }
+
+  // Trigger missing data alerts
+  const uniqueMissingDataMentors = Array.from(
+    new Set(missingDataMentors.map((m) => m.mentor.id))
+  ).map((id) => missingDataMentors.find((m) => m.mentor.id === id)!);
+
+  for (const item of uniqueMissingDataMentors.slice(0, 3)) {
+    await prisma.alert.create({
+      data: {
+        ruleId: missingDataRule.id,
+        mentorId: item.mentor.id,
+        mentorName: item.mentor.mentorName,
+        teamName: item.mentor.teamName,
+        period: item.periodDate,
+        severity: 'WARNING',
+        message: `${item.mentor.mentorName} has missing data for 2+ consecutive days`,
+        metadata: {
+          lastReportedDate: item.periodDate.toISOString().split('T')[0],
+        },
+      },
+    });
+  }
+
+  const totalAlerts = triggeredBelowTargetAlerts + uniqueMissingDataMentors.slice(0, 3).length;
+  console.log(`✅ Triggered ${totalAlerts} alerts (${triggeredBelowTargetAlerts} below-target, ${Math.min(3, uniqueMissingDataMentors.length)} missing-data)`);
+
+  console.log('\n✅ Seed complete!\n');
+  console.log('📊 Summary:');
+  console.log(`   Teams: ${teams.length}`);
+  console.log(`   Users: ${1 + leaders.length} (1 admin, ${leaders.length} leaders)`);
+  console.log(`   Mentors: ${allMentors.length}`);
+  console.log(`   Metrics: ${totalMetrics}`);
+  console.log(`   Alert Rules: ${rules.length}`);
+  console.log(`   Triggered Alerts: ${totalAlerts}`);
+  console.log('\n🔑 Login Credentials:');
+  console.log('   Admin:   admin@cmetrics.io / admin123');
+  console.log('   Leader1: leader1@cmetrics.io / admin123');
+  console.log('   Leader2: leader2@cmetrics.io / admin123\n');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    console.error('❌ Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

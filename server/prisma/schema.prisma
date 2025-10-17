@@ -42,35 +42,38 @@ model Team {
   updatedAt   DateTime @updatedAt
 
   users   User[]
-  agents  Agent[]
+  mentors Mentor[]
   targets Target[]
+  config  Config?
 
   @@index([name])
 }
 
-// Agent performance data
-model Agent {
+// Course Mentor (aka Agent)
+model Mentor {
   id        String   @id @default(cuid())
-  agentId   String   @unique // External ID from Excel/Sheets
-  agentName String
+  mentorId  String   @unique // External ID from Excel/Sheets
+  mentorName String
   teamId    String
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  metrics MetricSnapshot[]
+  metrics MetricDaily[]
 
-  @@index([agentId])
+  @@index([mentorId])
   @@index([teamId])
-  @@index([agentName])
+  @@index([mentorName])
+  @@index([teamId, mentorId])
 }
 
-// Time-series metrics for each agent
-model MetricSnapshot {
+// Daily metrics for each mentor
+model MetricDaily {
   id        String   @id @default(cuid())
-  agentId   String
-  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  period    DateTime // Start of period (e.g., 2025-10-01 for October)
+  mentorId  String
+  mentor    Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  teamId    String   // Denormalized for faster team queries
+  periodDate DateTime // Specific date (not month)
   weekOfMonth Int?   // 1-4 for weekly pacing
 
   // Core metrics (percentages stored as 0-100)
@@ -80,34 +83,92 @@ model MetricSnapshot {
   fixedPct  Float? // Fixed %
 
   // Referral funnel
-  referralLeads     Int?
-  referralShowups   Int?
-  referralPaid      Int?
-  referralAchievementPct Float? // Calculated
+  referralLeads   Int?
+  referralShowups Int?
+  referralPaid    Int?
 
   // Lead recovery
   totalLeads       Int?
   recoveredLeads   Int?
   unrecoveredLeads Int?
-  unrecoveredNotes String[] // JSON array of notes
-  conversionPct    Float?   // recovered ÷ total
-
-  // Computed values
-  weightedScore Float?   // Calculated based on active target config
-  targetsHit    Int?     // 0-4 count of targets achieved
-  status        Status?  // ABOVE, WARNING, BELOW
+  notes            String[] // Unrecovered notes
 
   // Ingestion metadata
-  ingestionId   String?  // Links to ingestion batch
-  checksum      String?  // For deduplication
+  ingestionId String? // Links to Upload
+  checksum    String? // For deduplication
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([agentId, period, weekOfMonth])
-  @@index([agentId, period])
-  @@index([period])
+  @@unique([mentorId, periodDate])
+  @@index([mentorId, periodDate])
+  @@index([teamId, periodDate])
+  @@index([periodDate])
+  @@index([weekOfMonth])
+}
+
+// Configuration (targets, weights, pacing, alert thresholds)
+model Config {
+  id     String @id @default(cuid())
+  teamId String? @unique // null = global default
+  team   Team?   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  // Targets (percentages stored as 0-100)
+  ccTarget                  Float @default(80)
+  scTarget                  Float @default(15)
+  upTarget                  Float @default(25)
+  fixedTarget               Float @default(60)
+  referralAchievementTarget Float @default(80)
+  conversionTarget          Float @default(30)
+
+  // Weights (must sum to 100)
+  ccWeight    Float @default(25)
+  scWeight    Float @default(25)
+  upWeight    Float @default(25)
+  fixedWeight Float @default(25)
+
+  // Status thresholds
+  aboveThreshold   Float @default(100)
+  warningThreshold Float @default(90)
+
+  // Pacing week (1-4)
+  pacingWeek Int @default(4)
+
+  // Alert thresholds (JSON)
+  alertThresholds Json @default("{\"belowTargetPct\": 70, \"consecutivePeriods\": 3, \"missingDataDays\": 2, \"varianceThreshold\": 30}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
+}
+
+// Upload audit log
+model Upload {
+  id           String   @id @default(cuid())
+  source       String   // "cc_file", "fixed_file", "re_file", "up_file", "all_leads_file", "google_sheets"
+  sourceDetail String?  // filename or spreadsheetId
+  checksum     String?  // MD5 of file content
+  createdBy    String?  // User ID
+  meta         Json?    // Column mappings, original headers, etc.
+  status       IngestionStatus
+  recordsProcessed Int
+  recordsAccepted  Int
+  recordsRejected  Int
+  recordsUpdated   Int
+  recordsCreated   Int
+  errors       Json?    // Array of error objects
+  createdAt    DateTime @default(now())
+
+  @@index([source, createdAt])
   @@index([status])
+  @@index([createdBy])
+}
+
+enum IngestionStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
 }
 
 enum Status {
@@ -180,8 +241,8 @@ model Alert {
   id          String   @id @default(cuid())
   ruleId      String
   rule        AlertRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  agentId     String   // Not FK to allow orphaned alerts
-  agentName   String
+  mentorId    String   // Not FK to allow orphaned alerts
+  mentorName  String
   teamName    String
   period      DateTime
   severity    Severity
@@ -189,10 +250,11 @@ model Alert {
   metadata    Json?    // Additional context
   dismissed   Boolean  @default(false)
   dismissedAt DateTime?
+  assignedTo  String?  // User ID
   createdAt   DateTime @default(now())
 
   @@index([ruleId])
-  @@index([agentId, period])
+  @@index([mentorId, period])
   @@index([dismissed, createdAt])
   @@index([severity])
 }
@@ -203,26 +265,3 @@ enum Severity {
   CRITICAL
 }
 
-// Ingestion audit log
-model IngestionLog {
-  id           String   @id @default(cuid())
-  source       String   // "cc_file", "fixed_file", "google_sheets", etc.
-  sourceDetail String?  // filename or spreadsheetId
-  status       IngestionStatus
-  recordsProcessed Int
-  recordsAccepted  Int
-  recordsRejected  Int
-  errors       Json?    // Array of error objects
-  checksum     String?  // For duplicate detection
-  uploadedBy   String?  // User ID
-  createdAt    DateTime @default(now())
-
-  @@index([source, createdAt])
-  @@index([status])
-}
-
-enum IngestionStatus {
-  SUCCESS
-  PARTIAL
-  FAILED
-}

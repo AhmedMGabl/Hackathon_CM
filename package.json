@@ -1,8 +1,8 @@
 {
-  "name": "metricwave",
+  "name": "cmetrics",
   "version": "1.0.0",
   "private": true,
-  "description": "MetricWave - Operations analytics platform with AI-powered coaching",
+  "description": "CMetrics - Operational clarity for the Course Mentor team",
   "workspaces": [
     "server",
     "client"

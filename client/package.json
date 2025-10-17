@@ -1,5 +1,5 @@
 {
-  "name": "@metricwave/client",
+  "name": "@cmetrics/client",
   "version": "1.0.0",
   "private": true,
   "type": "module",
