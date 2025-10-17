@@ -1,7 +1,7 @@
-import { env } from '@/config/env';
-import { AICoachRequest, AIHelpRequest, AIResponse } from '@/types';
-import { AI_CONFIG } from '@/config/constants';
-import logger from '@/utils/logger';
+import { env } from '../config/env.js';
+import { AICoachRequest, AIHelpRequest, AIResponse } from '../types/index.js';
+import { AI_CONFIG } from '../config/constants.js';
+import logger from '../utils/logger.js';
 
 // Simple in-memory cache for AI responses
 const responseCache = new Map<string, { response: AIResponse; timestamp: number }>();

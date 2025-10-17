@@ -1,9 +1,9 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
-import { env } from '@/config/env';
-import { UPLOAD_LIMITS } from '@/config/constants';
-import { BadRequestError } from '@/utils/errors';
+import { env } from '../config/env.js';
+import { UPLOAD_LIMITS } from '../config/constants.js';
+import { BadRequestError } from '../utils/errors.js';
 
 // Ensure upload directory exists
 async function ensureUploadDir() {

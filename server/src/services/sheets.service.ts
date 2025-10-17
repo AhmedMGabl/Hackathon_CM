@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
-import { env } from '@/config/env';
-import logger from '@/utils/logger';
-import { BadRequestError } from '@/utils/errors';
+import { env } from '../config/env.js';
+import logger from '../utils/logger.js';
+import { BadRequestError } from '../utils/errors.js';
 
 /**
  * Google Sheets service

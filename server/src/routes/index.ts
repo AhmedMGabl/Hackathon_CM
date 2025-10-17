@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import healthRoutes from './health';
+import healthRoutes from './health.js';
 // TODO PASS 2: Import remaining routes
 // import authRoutes from './auth';
 // import ingestionRoutes from './ingestion';

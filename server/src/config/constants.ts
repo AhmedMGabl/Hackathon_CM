@@ -1,4 +1,4 @@
-import { TargetConfig, PacingConfig } from '@/types';
+import { TargetConfig, PacingConfig } from '../types/index.js';
 
 // Default target values (monthly)
 export const DEFAULT_TARGETS: TargetConfig = {

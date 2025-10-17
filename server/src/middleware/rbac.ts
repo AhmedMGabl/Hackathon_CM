@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ForbiddenError } from '@/utils/errors';
+import { ForbiddenError } from '../utils/errors.js';
 
 /**
  * Role-based access control middleware

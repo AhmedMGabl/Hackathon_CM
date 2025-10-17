@@ -2,10 +2,10 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { env } from './config/env';
-import { requestLogger } from './middleware/requestLogger';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import routes from './routes';
+import { env } from './config/env.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import routes from './routes/index.js';
 
 // Create Express app
 const app = express();

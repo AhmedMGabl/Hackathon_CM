@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '@/utils/errors';
-import logger from '@/utils/logger';
+import { AppError } from '../utils/errors.js';
+import logger from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // Extend Express Request to include requestId

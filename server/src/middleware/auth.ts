@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { env } from '@/config/env';
-import { UnauthorizedError } from '@/utils/errors';
-import { JWTPayload } from '@/types';
+import { env } from '../config/env.js';
+import { UnauthorizedError } from '../utils/errors.js';
+import { JWTPayload } from '../types/index.js';
 
 // Extend Express Request to include user
 declare global {

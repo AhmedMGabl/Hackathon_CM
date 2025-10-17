@@ -1,5 +1,5 @@
-import { StatusType } from '@/types';
-import { STATUS_THRESHOLDS } from '@/config/constants';
+import { StatusType } from '../types/index.js';
+import { STATUS_THRESHOLDS } from '../config/constants.js';
 
 /**
  * Calculate percentage: (actual / target) * 100
