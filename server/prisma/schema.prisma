@@ -29,8 +29,9 @@ model User {
 }
 
 enum Role {
-  ADMIN
-  LEADER
+  SUPER_ADMIN  // Can upload files, manage users, see everything
+  ADMIN        // Team Leader - can only see own team(s)
+  LEADER       // Same as ADMIN (kept for compatibility)
 }
 
 // Team hierarchy
@@ -105,6 +106,112 @@ model MetricDaily {
   @@index([teamId, periodDate])
   @@index([periodDate])
   @@index([weekOfMonth])
+}
+
+// Student-level data for detailed analytics
+model Student {
+  id                String   @id @default(cuid())
+  studentId         String   @unique // External student ID
+  mentorId          String   // FK to mentor
+  teamName          String   // Denormalized for faster queries
+
+  // Student info
+  studentLevel      String?
+  packages          String?
+  registrationDate  DateTime?
+  firstOrderDate    DateTime?
+  latestRenewalTime DateTime?
+
+  // Fixed Rate data
+  isFixed           Boolean  @default(false)
+  fixedPlansCount   Int      @default(0)
+  fixedTeachersCount Int     @default(0)
+  completedLessonsThisMonth Int @default(0)
+
+  // Class Consumption data
+  classConsumptionLastMonth Float?
+  classConsumptionThisMonth Float?
+
+  // Lead data
+  totalLeadsGenerated Int @default(0)
+  isRecovered       Boolean @default(false)
+  recoveryDate      DateTime?
+  lastNoteDate      DateTime?
+
+  // Referral data
+  referralLeadsGenerated Int @default(0)
+  referralShowups       Int @default(0)
+  referralPaid          Int @default(0)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([mentorId])
+  @@index([teamName])
+  @@index([isFixed])
+  @@index([isRecovered])
+}
+
+// Aggregated mentor statistics (computed daily)
+model MentorStats {
+  id                String   @id @default(cuid())
+  mentorId          String
+  periodDate        DateTime
+
+  // Student counts
+  totalStudents     Int      @default(0)
+  activeStudents    Int      @default(0)
+
+  // Class Consumption distribution
+  cc0Students       Int      @default(0)  // 0 classes
+  cc1to7Students    Int      @default(0)  // 1-7 classes
+  cc8to11Students   Int      @default(0)  // 8-11 classes
+  cc12to14Students  Int      @default(0)  // 12-14 classes
+  cc15to19Students  Int      @default(0)  // 15-19 classes
+  cc20PlusStudents  Int      @default(0)  // 20+ classes
+
+  // Metrics
+  avgClassConsumption Float   @default(0)
+  superClassPct      Float   @default(0)
+  excellentStudentRate Float  @default(0)
+
+  // Fixed Rate
+  fixedStudents     Int      @default(0)
+  totalFixable      Int      @default(0)
+  fixedRatePct      Float    @default(0)
+
+  // Upgrade Rate
+  firstPurchaseCount Int     @default(0)
+  upgradedCount      Int     @default(0)
+  upgradeRatePct     Float   @default(0)
+
+  // Leads
+  totalLeads         Int     @default(0)
+  recoveredLeads     Int     @default(0)
+  unrecoveredLeads   Int     @default(0)
+  conversionRatePct  Float   @default(0)
+
+  // Referrals
+  referralLeads      Int     @default(0)
+  referralShowups    Int     @default(0)
+  referralPaid       Int     @default(0)
+
+  // Derived metrics
+  weightedScore      Float   @default(0)
+  targetsHit         Int     @default(0)
+  status             Status  @default(BELOW)
+  rank               Int?    // Within team
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([mentorId, periodDate])
+  @@index([mentorId])
+  @@index([periodDate])
+  @@index([status])
+  @@index([rank])
 }
 
 // Configuration (targets, weights, pacing, alert thresholds)

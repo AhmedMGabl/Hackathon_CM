@@ -7,7 +7,12 @@
       "Bash(git commit:*)",
       "Bash(npm install:*)",
       "Bash(cat:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(python3:*)",
+      "Bash(node analyze-excel.js:*)",
+      "Bash(node analyze-detailed.js:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
