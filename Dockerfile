@@ -1,8 +1,11 @@
 # Multi-stage Dockerfile for production deployment
 # Stage 1: Build server
-FROM node:18-alpine AS server-builder
+FROM node:18-slim AS server-builder
 
 WORKDIR /app
+
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl
 
 # Copy root package.json (defines workspaces)
 COPY package.json ./
@@ -17,7 +20,7 @@ RUN npm install --workspace=server --include=dev
 RUN npm run build --workspace=server
 
 # Stage 2: Build client
-FROM node:18-alpine AS client-builder
+FROM node:18-slim AS client-builder
 
 WORKDIR /app
 
@@ -34,9 +37,12 @@ RUN npm install --workspace=client --include=dev
 RUN npm run build --workspace=client
 
 # Stage 3: Production image
-FROM node:18-alpine
+FROM node:18-slim
 
 WORKDIR /app
+
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy root package.json (defines workspaces)
 COPY package.json ./
