@@ -197,6 +197,12 @@ export default function Overview() {
             <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>Targets</div>
             <div style={{ fontSize: '14px', color: tokens.colors.neutral[400] }}>Configure targets & weights</div>
           </a>
+          {user?.role === 'SUPER_ADMIN' && (
+            <a href="/upload" style={{ background: tokens.colors.primary[900] + '20', padding: '16px', borderRadius: tokens.radii.lg, textDecoration: 'none', color: tokens.colors.neutral[100], border: `2px solid ${tokens.colors.primary[600]}`, transition: 'all 0.2s' }}>
+              <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px', color: tokens.colors.primary[600] }}>Upload Data</div>
+              <div style={{ fontSize: '14px', color: tokens.colors.neutral[400] }}>Import Excel files</div>
+            </a>
+          )}
         </div>
       </main>
     </div>
