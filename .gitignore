@@ -42,5 +42,6 @@ temp/
 *.db
 *.db-journal
 
-# Prisma
-server/prisma/migrations/
+# Prisma local dev databases
+server/prisma/dev.db
+server/prisma/dev.db-journal
