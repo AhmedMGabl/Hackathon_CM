@@ -1,12 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  ColumnDef,
-  flexRender,
-  SortingState,
-} from '@tanstack/react-table';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { mentorApi } from '../lib/api';
 import { tokens } from '../config/tokens';
@@ -25,191 +17,26 @@ interface Mentor {
   status: 'ABOVE' | 'WARNING' | 'BELOW';
 }
 
-interface MentorDetailModalProps {
-  mentor: Mentor;
-  onClose: () => void;
-}
-
-function MentorDetailModal({ mentor, onClose }: MentorDetailModalProps) {
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: tokens.colors.surface.card,
-          borderRadius: tokens.radii.xl,
-          padding: '32px',
-          maxWidth: '600px',
-          width: '90%',
-          maxHeight: '80vh',
-          overflow: 'auto',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '24px' }}>
-          <div>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.neutral[100], marginBottom: '4px' }}>
-              {mentor.mentorName}
-            </h2>
-            <p style={{ fontSize: '14px', color: tokens.colors.neutral[400] }}>{mentor.teamName}</p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: tokens.colors.neutral[400],
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '0',
-              width: '32px',
-              height: '32px',
-            }}
-          >
-            ×
-          </button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '24px' }}>
-          <MetricCard label="Class Consumption" value={mentor.avgCcPct} />
-          <MetricCard label="Super-CC" value={mentor.avgScPct} />
-          <MetricCard label="Upgrade" value={mentor.avgUpPct} />
-          <MetricCard label="Fixed" value={mentor.avgFixedPct} />
-        </div>
-
-        <div style={{ background: tokens.colors.surface.dark, padding: '16px', borderRadius: tokens.radii.lg, marginBottom: '16px' }}>
-          <div style={{ fontSize: '14px', color: tokens.colors.neutral[400], marginBottom: '8px' }}>Weighted Score</div>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: tokens.colors.neutral[100] }}>
-            {mentor.weightedScore.toFixed(1)}
-          </div>
-        </div>
-
-        <div style={{ background: tokens.colors.surface.dark, padding: '16px', borderRadius: tokens.radii.lg }}>
-          <div style={{ fontSize: '14px', color: tokens.colors.neutral[400], marginBottom: '8px' }}>Targets Hit</div>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: tokens.colors.neutral[100] }}>
-            {mentor.targetsHit} / 4
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div style={{ background: tokens.colors.surface.dark, padding: '16px', borderRadius: tokens.radii.lg }}>
-      <div style={{ fontSize: '12px', color: tokens.colors.neutral[400], marginBottom: '4px' }}>{label}</div>
-      <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.neutral[100] }}>
-        {value.toFixed(1)}%
-      </div>
-    </div>
-  );
-}
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'ABOVE':
-      return { bg: tokens.colors.success[900] + '20', text: tokens.colors.success[400] };
-    case 'WARNING':
-      return { bg: tokens.colors.warning[900] + '20', text: tokens.colors.warning[400] };
-    case 'BELOW':
-      return { bg: tokens.colors.danger[900] + '20', text: tokens.colors.danger[400] };
-    default:
-      return { bg: tokens.colors.neutral[800], text: tokens.colors.neutral[400] };
-  }
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors = getStatusColor(status);
-  return (
-    <span
-      style={{
-        padding: '6px 12px',
-        background: colors.bg,
-        color: colors.text,
-        borderRadius: '6px',
-        fontSize: '12px',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-      }}
-    >
-      {status}
-    </span>
-  );
-}
-
-function MetricChip({ value, target }: { value: number; target: number }) {
-  const isAbove = value >= target;
-  return (
-    <span
-      style={{
-        padding: '4px 8px',
-        background: isAbove ? tokens.colors.success[900] + '20' : tokens.colors.danger[900] + '20',
-        color: isAbove ? tokens.colors.success[400] : tokens.colors.danger[400],
-        borderRadius: '6px',
-        fontSize: '12px',
-        fontWeight: 600,
-      }}
-    >
-      {value.toFixed(1)}%
-    </span>
-  );
-}
-
 export default function Mentors() {
   const { user, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [mentors, setMentors] = useState<Mentor[]>([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [filters, setFilters] = useState({
-    search: '',
-    teamId: '',
-    status: '' as '' | 'ABOVE' | 'WARNING' | 'BELOW',
-  });
-  const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
-  const [config, setConfig] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   useEffect(() => {
-    loadData();
-  }, [pagination.page, sorting, filters]);
+    loadMentors();
+  }, []);
 
-  const loadData = async () => {
+  const loadMentors = async () => {
     try {
       setLoading(true);
-      const sortBy = sorting[0]?.id as 'mentorName' | 'weightedScore' | 'targetsHit' | undefined;
-      const sortOrder = sorting[0]?.desc ? 'desc' : 'asc';
-
-      const [mentorsRes, configRes] = await Promise.all([
-        mentorApi.list({
-          page: pagination.page,
-          limit: pagination.limit,
-          sortBy,
-          sortOrder,
-          status: filters.status || undefined,
-          search: filters.search || undefined,
-          teamId: filters.teamId || undefined,
-        }),
-        config ? Promise.resolve({ data: config }) : mentorApi.list({ limit: 1 }).then(() => ({ data: null })),
-      ]);
-
-      setMentors(mentorsRes.data || []);
-      setPagination((prev) => ({ ...prev, total: mentorsRes.pagination?.total || 0 }));
-      if (!config && configRes.data) setConfig(configRes.data);
+      const response = await mentorApi.list({ limit: 100 });
+      // Add rank to each mentor
+      const sortedMentors = (response.data || [])
+        .sort((a: any, b: any) => (b.weightedScore || 0) - (a.weightedScore || 0))
+        .map((m: any, idx: number) => ({ ...m, rank: idx + 1 }));
+      setMentors(sortedMentors);
     } catch (error) {
       console.error('Failed to load mentors:', error);
     } finally {
@@ -217,130 +44,73 @@ export default function Mentors() {
     }
   };
 
-  const columns = useMemo<ColumnDef<Mentor>[]>(
-    () => [
-      {
-        id: 'rank',
-        header: 'Rank',
-        cell: ({ row }) => (
-          <div style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.neutral[300] }}>
-            #{pagination.limit * (pagination.page - 1) + row.index + 1}
-          </div>
-        ),
-        enableSorting: false,
-      },
-      {
-        accessorKey: 'mentorName',
-        header: 'Mentor',
-        cell: ({ getValue }) => (
-          <div style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.neutral[100] }}>
-            {getValue() as string}
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'teamName',
-        header: 'Team',
-        cell: ({ getValue }) => (
-          <div style={{ fontSize: '14px', color: tokens.colors.neutral[300] }}>{getValue() as string}</div>
-        ),
-        enableSorting: false,
-      },
-      {
-        id: 'cc',
-        header: 'CC',
-        accessorKey: 'avgCcPct',
-        cell: ({ row }) => <MetricChip value={row.original.avgCcPct} target={config?.ccTarget || 80} />,
-        enableSorting: false,
-      },
-      {
-        id: 'sc',
-        header: 'SC',
-        accessorKey: 'avgScPct',
-        cell: ({ row }) => <MetricChip value={row.original.avgScPct} target={config?.scTarget || 15} />,
-        enableSorting: false,
-      },
-      {
-        id: 'up',
-        header: 'UP',
-        accessorKey: 'avgUpPct',
-        cell: ({ row }) => <MetricChip value={row.original.avgUpPct} target={config?.upTarget || 25} />,
-        enableSorting: false,
-      },
-      {
-        id: 'fixed',
-        header: 'Fixed',
-        accessorKey: 'avgFixedPct',
-        cell: ({ row }) => <MetricChip value={row.original.avgFixedPct} target={config?.fixedTarget || 60} />,
-        enableSorting: false,
-      },
-      {
-        accessorKey: 'weightedScore',
-        header: 'Score',
-        cell: ({ getValue }) => (
-          <div style={{ fontSize: '14px', fontWeight: 700, color: tokens.colors.primary[600] }}>
-            {(getValue() as number).toFixed(1)}
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'targetsHit',
-        header: 'Targets',
-        cell: ({ getValue }) => (
-          <div style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.neutral[100] }}>
-            {getValue() as number} / 4
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ getValue }) => <StatusBadge status={getValue() as string} />,
-        enableSorting: false,
-      },
-    ],
-    [pagination.page, pagination.limit, config]
-  );
-
-  const table = useReactTable({
-    data: mentors,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    state: {
-      sorting,
-    },
-    manualPagination: true,
-    manualSorting: true,
+  const filteredMentors = mentors.filter((m) => {
+    const matchesSearch = `${m.mentorName} ${m.mentorId} ${m.teamName}`
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'ALL' || m.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
-  const exportCSV = () => {
-    const headers = ['Rank', 'Mentor', 'Team', 'CC %', 'SC %', 'UP %', 'Fixed %', 'Weighted Score', 'Targets Hit', 'Status'];
-    const rows = mentors.map((m, idx) => [
-      idx + 1,
-      m.mentorName,
-      m.teamName,
-      m.avgCcPct.toFixed(1),
-      m.avgScPct.toFixed(1),
-      m.avgUpPct.toFixed(1),
-      m.avgFixedPct.toFixed(1),
-      m.weightedScore.toFixed(1),
-      m.targetsHit,
-      m.status,
-    ]);
-
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `mentors-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ABOVE': return tokens.colors.success[600];
+      case 'WARNING': return tokens.colors.warning[500];
+      case 'BELOW': return tokens.colors.danger[600];
+      default: return tokens.colors.neutral[600];
+    }
   };
 
-  const totalPages = Math.ceil(pagination.total / pagination.limit);
+  const getMetricStatus = (actual: number, target: number): { status: string; color: string } => {
+    if (actual >= target) return { status: 'Above Target', color: tokens.colors.success[600] };
+    if (actual >= target * 0.9) return { status: 'Warning', color: tokens.colors.warning[500] };
+    return { status: 'Below Target', color: tokens.colors.danger[600] };
+  };
+
+  const MetricCard = ({ title, actual, target, hasData = true }: { title: string; actual: number; target: number; hasData?: boolean }) => {
+    if (!hasData) {
+      return (
+        <div style={{ background: tokens.colors.surface.dark, padding: '16px', borderRadius: tokens.radii.md, border: `1px solid ${tokens.colors.neutral[800]}` }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: tokens.colors.neutral[300], marginBottom: '8px' }}>{title}</div>
+          <div style={{ fontSize: '16px', color: tokens.colors.neutral[500] }}>No Data</div>
+          <div style={{ fontSize: '11px', color: tokens.colors.neutral[600], marginTop: '4px' }}>N/A / {target}%</div>
+        </div>
+      );
+    }
+
+    const { status, color } = getMetricStatus(actual, target);
+    const gap = target - actual;
+
+    return (
+      <div style={{ background: tokens.colors.surface.dark, padding: '14px', borderRadius: tokens.radii.md, border: `2px solid ${color}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: tokens.colors.neutral[100] }}>{title}</div>
+          <div style={{ padding: '3px 6px', background: color + '20', color, borderRadius: '4px', fontSize: '10px', fontWeight: 700 }}>
+            {status}
+          </div>
+        </div>
+        <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.neutral[100], marginBottom: '4px' }}>
+          {actual.toFixed(1)}% <span style={{ fontSize: '14px', color: tokens.colors.neutral[500] }}>/ {target}%</span>
+        </div>
+        <div style={{ fontSize: '11px', color: tokens.colors.neutral[400] }}>
+          Current: {actual.toFixed(1)}% • Target: {target}%
+        </div>
+        {gap > 0 && (
+          <div style={{ fontSize: '11px', color: tokens.colors.danger[400], marginTop: '4px' }}>
+            Gap: {gap.toFixed(1)}%
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: tokens.colors.surface.dark, padding: '24px' }}>
+        <div style={{ color: tokens.colors.neutral[400] }}>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: tokens.colors.surface.dark }}>
@@ -352,221 +122,180 @@ export default function Mentors() {
             <p style={{ fontSize: '14px', color: tokens.colors.neutral[400] }}>Mentor Performance</p>
           </div>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <a href="/overview" style={{ color: tokens.colors.neutral[300], fontSize: '14px', textDecoration: 'none' }}>
-              ← Back to Overview
-            </a>
-            <span style={{ color: tokens.colors.neutral[300], fontSize: '14px' }}>
-              {user?.firstName} {user?.lastName} ({user?.role})
-            </span>
-            <button
-              onClick={logout}
-              style={{
-                padding: '8px 16px',
-                background: tokens.colors.neutral[800],
-                color: tokens.colors.neutral[200],
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                cursor: 'pointer',
-              }}
-            >
-              Logout
-            </button>
+            <a href="/" style={{ color: tokens.colors.primary[600], textDecoration: 'none', fontSize: '14px' }}>← Back to Overview</a>
+            <span style={{ color: tokens.colors.neutral[300], fontSize: '14px' }}>{user?.firstName} {user?.lastName} ({user?.role})</span>
+            <button onClick={logout} style={{ padding: '8px 16px', background: tokens.colors.neutral[800], color: tokens.colors.neutral[200], border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>Logout</button>
           </div>
         </div>
       </header>
 
       <main style={{ maxWidth: '1600px', margin: '0 auto', padding: '24px' }}>
         {/* Filters */}
-        <div
-          style={{
-            background: tokens.colors.surface.card,
-            padding: '24px',
-            borderRadius: tokens.radii.lg,
-            marginBottom: '24px',
-            display: 'flex',
-            gap: '16px',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-          }}
-        >
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
           <input
             type="text"
             placeholder="Search mentors..."
-            value={filters.search}
-            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            style={{
-              flex: '1',
-              minWidth: '200px',
-              padding: '10px 16px',
-              background: tokens.colors.surface.dark,
-              border: `1px solid ${tokens.colors.neutral[700]}`,
-              borderRadius: '8px',
-              color: tokens.colors.neutral[100],
-              fontSize: '14px',
-            }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ flex: 1, padding: '12px 16px', background: tokens.colors.surface.card, border: `1px solid ${tokens.colors.neutral[800]}`, borderRadius: tokens.radii.md, color: tokens.colors.neutral[100], fontSize: '14px' }}
           />
-
           <select
-            value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as any }))}
-            style={{
-              padding: '10px 16px',
-              background: tokens.colors.surface.dark,
-              border: `1px solid ${tokens.colors.neutral[700]}`,
-              borderRadius: '8px',
-              color: tokens.colors.neutral[100],
-              fontSize: '14px',
-            }}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ padding: '12px 16px', background: tokens.colors.surface.card, border: `1px solid ${tokens.colors.neutral[800]}`, borderRadius: tokens.radii.md, color: tokens.colors.neutral[100], fontSize: '14px', minWidth: '150px' }}
           >
-            <option value="">All Statuses</option>
-            <option value="ABOVE">Above</option>
+            <option value="ALL">All Statuses</option>
+            <option value="ABOVE">Above Target</option>
             <option value="WARNING">Warning</option>
-            <option value="BELOW">Below</option>
+            <option value="BELOW">Below Target</option>
           </select>
-
-          <button
-            onClick={exportCSV}
-            disabled={mentors.length === 0}
-            style={{
-              padding: '10px 20px',
-              background: tokens.colors.primary[600],
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: mentors.length > 0 ? 'pointer' : 'not-allowed',
-              opacity: mentors.length > 0 ? 1 : 0.5,
-            }}
-          >
-            Export CSV
-          </button>
         </div>
 
-        {/* Table */}
-        <div style={{ background: tokens.colors.surface.card, borderRadius: tokens.radii.lg, overflow: 'hidden' }}>
-          {loading ? (
-            <div style={{ padding: '48px', textAlign: 'center', color: tokens.colors.neutral[400] }}>Loading...</div>
-          ) : (
-            <>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id} style={{ borderBottom: `1px solid ${tokens.colors.neutral[800]}` }}>
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
-                            style={{
-                              padding: '16px',
-                              textAlign: 'left',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              color: tokens.colors.neutral[400],
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px',
-                              cursor: header.column.getCanSort() ? 'pointer' : 'default',
-                              userSelect: 'none',
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              {flexRender(header.column.columnDef.header, header.getContext())}
-                              {header.column.getCanSort() && (
-                                <span style={{ fontSize: '10px' }}>
-                                  {header.column.getIsSorted() === 'asc' ? '↑' : header.column.getIsSorted() === 'desc' ? '↓' : '↕'}
-                                </span>
-                              )}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {table.getRowModel().rows.map((row) => (
-                      <tr
-                        key={row.id}
-                        onClick={() => setSelectedMentor(row.original)}
-                        style={{
-                          borderBottom: `1px solid ${tokens.colors.neutral[800]}`,
-                          cursor: 'pointer',
-                          transition: 'background 0.15s',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = tokens.colors.neutral[900])}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} style={{ padding: '16px' }}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+        {/* Mentor Cards Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(550px, 1fr))', gap: '24px' }}>
+          {filteredMentors.map((mentor: any) => {
+            // Mock data for demo - replace with real data from API
+            const leadStats = {
+              totalLeads: Math.floor(Math.random() * 500) + 100,
+              recovered: 0,
+              unrecovered: 0,
+              conversionRate: 29.5,
+              referralLeads: Math.floor(Math.random() * 50),
+              referralShowups: 0,
+              referralPaid: 0,
+            };
+            leadStats.recovered = Math.floor(leadStats.totalLeads * 0.295);
+            leadStats.unrecovered = leadStats.totalLeads - leadStats.recovered;
+            const totalStudents = Math.floor(Math.random() * 150) + 50;
 
-              {/* Pagination */}
+            return (
               <div
+                key={mentor.id}
                 style={{
-                  padding: '16px 24px',
-                  borderTop: `1px solid ${tokens.colors.neutral[800]}`,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  background: tokens.colors.surface.card,
+                  borderRadius: tokens.radii.lg,
+                  padding: '20px',
+                  boxShadow: tokens.shadows.card,
+                  border: `2px solid ${getStatusColor(mentor.status)}`,
                 }}
               >
-                <div style={{ fontSize: '14px', color: tokens.colors.neutral[400] }}>
-                  Showing {mentors.length === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1} to{' '}
-                  {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} mentors
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
-                    disabled={pagination.page === 1}
-                    style={{
-                      padding: '8px 16px',
-                      background: tokens.colors.neutral[800],
-                      color: tokens.colors.neutral[200],
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      cursor: pagination.page === 1 ? 'not-allowed' : 'pointer',
-                      opacity: pagination.page === 1 ? 0.5 : 1,
-                    }}
-                  >
-                    Previous
-                  </button>
-                  <div style={{ padding: '8px 16px', color: tokens.colors.neutral[300], fontSize: '14px' }}>
-                    Page {pagination.page} of {totalPages || 1}
+                {/* Agent Header */}
+                <div style={{ borderBottom: `1px solid ${tokens.colors.neutral[800]}`, paddingBottom: '12px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '6px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '18px', fontWeight: 700, color: tokens.colors.neutral[100], marginBottom: '4px' }}>
+                        {mentor.mentorName}
+                      </h3>
+                      <div style={{ fontSize: '12px', color: tokens.colors.neutral[400] }}>
+                        {mentor.mentorId} | {mentor.teamName} | {totalStudents} Students
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '11px', color: tokens.colors.neutral[500], marginBottom: '4px' }}>Rank #{mentor.rank}</div>
+                      <div style={{ padding: '5px 10px', background: getStatusColor(mentor.status) + '20', color: getStatusColor(mentor.status), borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                        {mentor.status}
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
-                    disabled={pagination.page >= totalPages}
-                    style={{
-                      padding: '8px 16px',
-                      background: tokens.colors.neutral[800],
-                      color: tokens.colors.neutral[200],
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      cursor: pagination.page >= totalPages ? 'not-allowed' : 'pointer',
-                      opacity: pagination.page >= totalPages ? 0.5 : 1,
-                    }}
-                  >
-                    Next
-                  </button>
+                  <div style={{ fontSize: '12px', color: tokens.colors.neutral[500] }}>
+                    {mentor.targetsHit}/4 Targets Achieved
+                  </div>
+                </div>
+
+                {/* Performance Overview */}
+                <div style={{ background: tokens.colors.primary[900] + '15', padding: '14px', borderRadius: tokens.radii.md, marginBottom: '12px', border: `1px solid ${tokens.colors.primary[800]}` }}>
+                  <div style={{ fontSize: '11px', color: tokens.colors.neutral[400], marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Performance Overview</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
+                    <div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: tokens.colors.primary[600] }}>
+                        {mentor.weightedScore.toFixed(1)}%
+                      </div>
+                      <div style={{ fontSize: '12px', color: tokens.colors.neutral[400] }}>Overall Score</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.neutral[100] }}>{mentor.targetsHit}</div>
+                      <div style={{ fontSize: '11px', color: tokens.colors.neutral[500] }}>Targets Hit</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.neutral[100] }}>{totalStudents}</div>
+                      <div style={{ fontSize: '11px', color: tokens.colors.neutral[500] }}>Students</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Target Achievement Breakdown */}
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: tokens.colors.neutral[200], marginBottom: '10px' }}>
+                    Target Achievement Breakdown
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <MetricCard title="Fixed Rate" actual={mentor.avgFixedPct} target={60} hasData={mentor.avgFixedPct > 0} />
+                    <MetricCard title="Class Consumption" actual={mentor.avgCcPct} target={80} hasData={mentor.avgCcPct > 0} />
+                    <MetricCard title="Super Class" actual={mentor.avgScPct} target={15} hasData={mentor.avgScPct > 0} />
+                    <MetricCard title="Upgrade Rate" actual={mentor.avgUpPct} target={25} hasData={mentor.avgUpPct > 0} />
+                  </div>
+                </div>
+
+                {/* Lead Conversion */}
+                <div style={{ background: tokens.colors.surface.dark, padding: '14px', borderRadius: tokens.radii.md, marginBottom: '12px', border: `1px solid ${tokens.colors.neutral[800]}` }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: tokens.colors.neutral[200], marginBottom: '10px' }}>
+                    Lead Conversion
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', color: tokens.colors.neutral[500], marginBottom: '4px' }}>Conversion Rate</div>
+                      <div style={{ fontSize: '18px', fontWeight: 700, color: tokens.colors.success[600] }}>{leadStats.conversionRate}%</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '10px', color: tokens.colors.neutral[500], marginBottom: '4px' }}>Total Leads</div>
+                      <div style={{ fontSize: '18px', fontWeight: 700, color: tokens.colors.neutral[100] }}>{leadStats.totalLeads}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div style={{ background: tokens.colors.success[900] + '20', padding: '10px', borderRadius: '6px', border: `1px solid ${tokens.colors.success[800]}` }}>
+                      <div style={{ fontSize: '10px', color: tokens.colors.neutral[400], marginBottom: '2px' }}>Recovered</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: tokens.colors.success[500] }}>{leadStats.recovered}</div>
+                      <div style={{ fontSize: '9px', color: tokens.colors.neutral[500] }}>Rate: {leadStats.conversionRate}%</div>
+                    </div>
+                    <div style={{ background: tokens.colors.danger[900] + '20', padding: '10px', borderRadius: '6px', border: `1px solid ${tokens.colors.danger[800]}` }}>
+                      <div style={{ fontSize: '10px', color: tokens.colors.neutral[400], marginBottom: '2px' }}>Unrecovered</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: tokens.colors.danger[500] }}>{leadStats.unrecovered}</div>
+                      <div style={{ fontSize: '9px', color: tokens.colors.neutral[500] }}>Rate: {(100 - leadStats.conversionRate).toFixed(1)}%</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Referral Performance */}
+                <div style={{ background: tokens.colors.surface.dark, padding: '14px', borderRadius: tokens.radii.md, border: `1px solid ${tokens.colors.neutral[800]}` }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: tokens.colors.neutral[200], marginBottom: '10px' }}>
+                    Referral Performance
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', color: tokens.colors.neutral[500], marginBottom: '4px' }}>Leads Generated</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: tokens.colors.neutral[100] }}>{leadStats.referralLeads}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', color: tokens.colors.neutral[500], marginBottom: '4px' }}>Showups</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: tokens.colors.neutral[100] }}>{leadStats.referralShowups}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', color: tokens.colors.neutral[500], marginBottom: '4px' }}>Paid Conversions</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: tokens.colors.success[600] }}>{leadStats.referralPaid}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </>
-          )}
+            );
+          })}
         </div>
-      </main>
 
-      {/* Detail Modal */}
-      {selectedMentor && <MentorDetailModal mentor={selectedMentor} onClose={() => setSelectedMentor(null)} />}
+        {filteredMentors.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '48px', color: tokens.colors.neutral[500] }}>
+            No mentors found matching your filters.
+          </div>
+        )}
+      </main>
     </div>
   );
 }
