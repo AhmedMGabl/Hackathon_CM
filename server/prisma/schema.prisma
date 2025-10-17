@@ -61,6 +61,7 @@ model Mentor {
   updatedAt DateTime @updatedAt
 
   metrics MetricDaily[]
+  stats   MentorStats[]
 
   @@index([mentorId])
   @@index([teamId])
@@ -158,6 +159,7 @@ model Student {
 model MentorStats {
   id                String   @id @default(cuid())
   mentorId          String
+  mentor            Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
   periodDate        DateTime
 
   // Student counts
@@ -371,4 +373,3 @@ enum Severity {
   WARNING
   CRITICAL
 }
-
