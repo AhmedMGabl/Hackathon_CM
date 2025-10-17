@@ -11,7 +11,7 @@ const responseCache = new Map<string, { response: AIResponse; timestamp: number 
  * Handles communication with OpenRouter API for coaching and help
  */
 class AIService {
-  private readonly apiKey: string;
+  private readonly apiKey: string | undefined;
   private readonly model: string;
   private readonly baseUrl: string;
 
