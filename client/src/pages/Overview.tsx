@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { mentorApi, configApi, alertApi } from '../lib/api';
 import { tokens } from '../config/tokens';
+import { BarChart, Bar, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Overview() {
   const { user, logout } = useAuth();
@@ -43,6 +44,32 @@ export default function Overview() {
     belowCount: mentors.filter((m) => m.status === 'BELOW').length,
   };
 
+  // Weekly pacing data (mock for now, will be real data in PASS 2)
+  const weeklyData = [
+    { week: 'W1', target: 25, actual: 28, multiplier: 4 },
+    { week: 'W2', target: 33.3, actual: 31, multiplier: 3 },
+    { week: 'W3', target: 50, actual: 48, multiplier: 2 },
+    { week: 'W4', target: 100, actual: kpis.avgCC, multiplier: 1 },
+  ];
+
+  // Team radar data
+  const radarData = [
+    { metric: 'CC%', value: kpis.avgCC, target: config?.ccTarget || 80 },
+    { metric: 'SC%', value: kpis.avgSC, target: config?.scTarget || 15 },
+    { metric: 'UP%', value: kpis.avgUP, target: config?.upTarget || 25 },
+    { metric: 'Fixed%', value: kpis.avgFixed, target: config?.fixedTarget || 60 },
+  ];
+
+  // Top/Bottom performers
+  const sortedByScore = [...mentors].sort((a, b) => (b.weightedScore || 0) - (a.weightedScore || 0));
+  const topPerformers = sortedByScore.slice(0, 5);
+  const bottomPerformers = sortedByScore.slice(-5).reverse();
+
+  const comparisonData = [
+    ...topPerformers.map((m) => ({ name: m.firstName + ' ' + m.lastName, score: m.weightedScore || 0, type: 'top' })),
+    ...bottomPerformers.map((m) => ({ name: m.firstName + ' ' + m.lastName, score: m.weightedScore || 0, type: 'bottom' })),
+  ];
+
   if (loading) {
     return <div style={{ minHeight: '100vh', background: tokens.colors.surface.dark, padding: '24px', color: tokens.colors.neutral[400] }}>Loading...</div>;
   }
@@ -80,6 +107,7 @@ export default function Overview() {
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
         <h2 style={{ fontSize: '30px', fontWeight: 700, color: tokens.colors.neutral[100], marginBottom: '24px' }}>Team Performance Overview</h2>
 
+        {/* KPI Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: '32px' }}>
           <KPICard title="Class Consumption" value={kpis.avgCC} target={config?.ccTarget || 80} />
           <KPICard title="Super-CC" value={kpis.avgSC} target={config?.scTarget || 15} />
@@ -87,6 +115,7 @@ export default function Overview() {
           <KPICard title="Fixed" value={kpis.avgFixed} target={config?.fixedTarget || 60} />
         </div>
 
+        {/* Mentor Status Distribution */}
         <div style={{ background: tokens.colors.surface.card, padding: '24px', borderRadius: tokens.radii.lg, boxShadow: tokens.shadows.card, marginBottom: '32px' }}>
           <h3 style={{ fontSize: '20px', fontWeight: 600, color: tokens.colors.neutral[100], marginBottom: '16px' }}>Mentor Status Distribution</h3>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
@@ -106,16 +135,65 @@ export default function Overview() {
           </div>
         </div>
 
+        {/* Charts Row 1: Weekly Pacing + Team Radar */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+          {/* Weekly Pacing Chart */}
+          <div style={{ background: tokens.colors.surface.card, padding: '24px', borderRadius: tokens.radii.lg, boxShadow: tokens.shadows.card }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: tokens.colors.neutral[100], marginBottom: '16px' }}>Weekly Pacing</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={tokens.colors.neutral[800]} />
+                <XAxis dataKey="week" stroke={tokens.colors.neutral[400]} />
+                <YAxis stroke={tokens.colors.neutral[400]} />
+                <Tooltip contentStyle={{ background: tokens.colors.surface.dark, border: `1px solid ${tokens.colors.neutral[700]}`, borderRadius: '8px' }} />
+                <Legend />
+                <Line type="monotone" dataKey="target" stroke={tokens.colors.warning[500]} strokeWidth={2} name="Target" />
+                <Line type="monotone" dataKey="actual" stroke={tokens.colors.primary[600]} strokeWidth={2} name="Actual" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Team Radar */}
+          <div style={{ background: tokens.colors.surface.card, padding: '24px', borderRadius: tokens.radii.lg, boxShadow: tokens.shadows.card }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: tokens.colors.neutral[100], marginBottom: '16px' }}>Team Metrics Radar</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke={tokens.colors.neutral[700]} />
+                <PolarAngleAxis dataKey="metric" stroke={tokens.colors.neutral[400]} />
+                <PolarRadiusAxis stroke={tokens.colors.neutral[400]} />
+                <Radar name="Actual" dataKey="value" stroke={tokens.colors.primary[600]} fill={tokens.colors.primary[600]} fillOpacity={0.5} />
+                <Radar name="Target" dataKey="target" stroke={tokens.colors.warning[500]} fill={tokens.colors.warning[500]} fillOpacity={0.3} />
+                <Legend />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Agent Comparison Chart */}
+        <div style={{ background: tokens.colors.surface.card, padding: '24px', borderRadius: tokens.radii.lg, boxShadow: tokens.shadows.card, marginBottom: '32px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 600, color: tokens.colors.neutral[100], marginBottom: '16px' }}>Top & Bottom Performers (Weighted Score)</h3>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={comparisonData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={tokens.colors.neutral[800]} />
+              <XAxis dataKey="name" stroke={tokens.colors.neutral[400]} angle={-45} textAnchor="end" height={100} />
+              <YAxis stroke={tokens.colors.neutral[400]} />
+              <Tooltip contentStyle={{ background: tokens.colors.surface.dark, border: `1px solid ${tokens.colors.neutral[700]}`, borderRadius: '8px' }} />
+              <Bar dataKey="score" fill={tokens.colors.primary[600]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Navigation Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          <a href="/mentors" style={{ background: tokens.colors.surface.card, padding: '16px', borderRadius: tokens.radii.lg, textDecoration: 'none', color: tokens.colors.neutral[100] }}>
+          <a href="/mentors" style={{ background: tokens.colors.surface.card, padding: '16px', borderRadius: tokens.radii.lg, textDecoration: 'none', color: tokens.colors.neutral[100], border: `1px solid ${tokens.colors.neutral[800]}`, transition: 'all 0.2s' }}>
             <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>View Mentors</div>
             <div style={{ fontSize: '14px', color: tokens.colors.neutral[400] }}>Detailed performance table</div>
           </a>
-          <a href="/alerts" style={{ background: tokens.colors.surface.card, padding: '16px', borderRadius: tokens.radii.lg, textDecoration: 'none', color: tokens.colors.neutral[100] }}>
+          <a href="/alerts" style={{ background: tokens.colors.surface.card, padding: '16px', borderRadius: tokens.radii.lg, textDecoration: 'none', color: tokens.colors.neutral[100], border: `1px solid ${tokens.colors.neutral[800]}`, transition: 'all 0.2s' }}>
             <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>Alerts</div>
             <div style={{ fontSize: '14px', color: tokens.colors.neutral[400] }}>{alertStats?.active || 0} active alerts</div>
           </a>
-          <a href="/targets" style={{ background: tokens.colors.surface.card, padding: '16px', borderRadius: tokens.radii.lg, textDecoration: 'none', color: tokens.colors.neutral[100] }}>
+          <a href="/targets" style={{ background: tokens.colors.surface.card, padding: '16px', borderRadius: tokens.radii.lg, textDecoration: 'none', color: tokens.colors.neutral[100], border: `1px solid ${tokens.colors.neutral[800]}`, transition: 'all 0.2s' }}>
             <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>Targets</div>
             <div style={{ fontSize: '14px', color: tokens.colors.neutral[400] }}>Configure targets & weights</div>
           </a>
