@@ -4,7 +4,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nAdd PASS 1: Complete full-stack analytics platform scaffold\n\n- Backend: Express + Prisma with complete schema (User, Team, Agent, MetricSnapshot, Target, Alert models)\n- Frontend: React + Vite with Tailwind, shadcn/ui, Recharts\n- Working Overview dashboard with KPI cards, weekly pacing, team radar, agent comparison charts\n- Professional design tokens (Blue #2563EB primary, WCAG-compliant)\n- Auth middleware (JWT cookies), RBAC, error handling\n- Service stubs: Upload (multer), Google Sheets, OpenRouter AI\n- Multi-stage Dockerfile for Railway deployment\n- Comprehensive documentation (7 docs + README + implementation plan)\n- Seed script with admin/leader users and sample data\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
