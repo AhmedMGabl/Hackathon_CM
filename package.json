@@ -1,8 +1,8 @@
 {
-  "name": "hackathon-cm",
+  "name": "metricwave",
   "version": "1.0.0",
   "private": true,
-  "description": "Operations analytics platform with AI-powered coaching",
+  "description": "MetricWave - Operations analytics platform with AI-powered coaching",
   "workspaces": [
     "server",
     "client"
