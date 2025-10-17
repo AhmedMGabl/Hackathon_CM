@@ -120,7 +120,7 @@ export async function ingestFromUpload(
   const rows = XLSX.utils.sheet_to_json(sheet);
 
   // Auto-detect headers
-  const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+  const headers = rows.length > 0 ? Object.keys(rows[0] as object) : [];
   const mapping = autoMapHeaders(headers, customMapping);
 
   const report: IngestionReport = {
@@ -297,7 +297,7 @@ export async function ingestFromUpload(
       recordsRejected: report.rejected,
       recordsUpdated: report.updated,
       recordsCreated: report.created,
-      errors: report.errors.length > 0 ? report.errors : null,
+      errors: report.errors.length > 0 ? (report.errors as any) : undefined,
     },
   });
 

@@ -164,7 +164,7 @@ router.get('/', authenticate, async (req, res, next) => {
 
     // Calculate ranks
     const sortedByScore = [...filtered].sort((a, b) => b.weightedScore - a.weightedScore);
-    filtered = filtered.map((m) => ({
+    const rankedData = filtered.map((m) => ({
       ...m,
       rank: sortedByScore.findIndex((s) => s.id === m.id) + 1,
     }));
@@ -174,7 +174,7 @@ router.get('/', authenticate, async (req, res, next) => {
 
     res.json({
       success: true,
-      data: filtered,
+      data: rankedData,
       pagination: {
         page,
         limit,

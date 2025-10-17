@@ -67,7 +67,7 @@ export interface PacingConfig {
 export type StatusType = 'ABOVE' | 'WARNING' | 'BELOW';
 
 export interface JWTPayload {
-  userId: string;
+  id: string;
   email: string;
   role: 'ADMIN' | 'LEADER';
   teamId?: string;

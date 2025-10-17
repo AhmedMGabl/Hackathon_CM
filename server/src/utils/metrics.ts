@@ -1,4 +1,4 @@
-import { Status } from '@prisma/client';
+export type Status = 'ABOVE' | 'WARNING' | 'BELOW';
 
 export interface TargetConfig {
   ccTarget: number;
