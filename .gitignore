@@ -42,6 +42,6 @@ temp/
 *.db
 *.db-journal
 
-# Prisma local dev databases
-server/prisma/dev.db
-server/prisma/dev.db-journal
+# Prisma
+server/prisma/mint/*.db
+server/prisma/mint/*.db-journal
