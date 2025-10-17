@@ -67,7 +67,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 }
 
 export default function MeetingAlerts() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });

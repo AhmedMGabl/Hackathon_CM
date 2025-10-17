@@ -391,7 +391,6 @@ export default function TargetsTracker() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
               {[1, 2, 3, 4].map((week) => {
-                const multiplier = getPacingMultiplier(week, editedConfig.pacingWeek);
                 const divisor = 5 - week;
                 return (
                   <div

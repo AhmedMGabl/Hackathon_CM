@@ -288,7 +288,7 @@ export default function Mentors() {
         header: 'Targets',
         cell: ({ getValue }) => (
           <div style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.neutral[100] }}>
-            {getValue()} / 4
+            {getValue() as number} / 4
           </div>
         ),
       },
