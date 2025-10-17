@@ -1,14 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import { ForbiddenError } from '../utils/errors.js';
+import type { UserRole } from '../types/index.js';
 
 /**
  * Role-based access control middleware
  * Ensures user has required role
  */
-export function requireRole(...roles: Array<'ADMIN' | 'LEADER'>) {
+export function requireRole(...roles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       throw new ForbiddenError('Authentication required');
+    }
+
+    // Super admins are allowed to access every route
+    if (req.user.role === 'SUPER_ADMIN') {
+      return next();
     }
 
     if (!roles.includes(req.user.role)) {
@@ -36,7 +42,7 @@ export function requireTeamAccess(req: Request, res: Response, next: NextFunctio
   }
 
   // Admins can access all teams
-  if (req.user.role === 'ADMIN') {
+  if (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN') {
     return next();
   }
 

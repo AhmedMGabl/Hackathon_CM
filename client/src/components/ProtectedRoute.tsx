@@ -2,13 +2,18 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { tokens } from '../config/tokens';
 
-interface ProtectedRouteProps {
+type ProtectedRouteProps = {
   children: React.ReactNode;
   requireAdmin?: boolean;
-}
+  requireSuperAdmin?: boolean;
+};
 
-export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { user, loading, isAdmin } = useAuth();
+export default function ProtectedRoute({
+  children,
+  requireAdmin = false,
+  requireSuperAdmin = false,
+}: ProtectedRouteProps) {
+  const { user, loading, isAdmin, isSuperAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -51,7 +56,14 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
     return <Navigate to="/login" replace />;
   }
 
-  if (requireAdmin && !isAdmin) {
+  const needsSuperAdmin = requireSuperAdmin && !isSuperAdmin;
+  const needsAdmin = !needsSuperAdmin && requireAdmin && !isAdmin;
+
+  if (needsSuperAdmin || needsAdmin) {
+    const message = needsSuperAdmin
+      ? 'Super admin privileges required.'
+      : 'Admin privileges required.';
+
     return (
       <div
         style={{
@@ -84,7 +96,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
               justifyContent: 'center',
             }}
           >
-            <span style={{ fontSize: '32px', color: tokens.colors.danger[600] }}>🚫</span>
+            <span style={{ fontSize: '32px', color: tokens.colors.danger[600] }}>⚠️</span>
           </div>
           <h2
             style={{
@@ -97,7 +109,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
             Access Denied
           </h2>
           <p style={{ color: tokens.colors.neutral[400], marginBottom: tokens.spacing[6] }}>
-            You don't have permission to access this page. Admin privileges required.
+            You don&apos;t have permission to access this page. {message}
           </p>
           <button
             onClick={() => window.history.back()}

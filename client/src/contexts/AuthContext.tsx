@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'LEADER';
+
 interface User {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
-  role: 'ADMIN' | 'LEADER';
+  role: UserRole;
   teamId: string | null;
   teamName?: string;
 }
@@ -18,6 +20,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isLeader: boolean;
+  isSuperAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,8 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'ADMIN',
+        isAdmin: user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN',
         isLeader: user?.role === 'LEADER',
+        isSuperAdmin: user?.role === 'SUPER_ADMIN',
       }}
     >
       {children}

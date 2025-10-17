@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import type { MentorStats as MentorStatsModel } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
+import { prisma } from '../lib/prisma.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Zod schemas
 const querySchema = z.object({
@@ -84,7 +84,7 @@ router.get('/', authenticate, async (req, res, next) => {
       },
     });
 
-    const statsMap = new Map(stats.map(s => [s.mentorId, s]));
+    const statsMap = new Map<string, MentorStatsModel>(stats.map((s) => [s.mentorId, s]));
 
     // Combine mentor info with stats
     let mentorsWithStats = mentors.map(mentor => {

@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 // Shared TypeScript types for the application
 
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'LEADER';
+
 export interface Agent {
   agent_id: string;
   agent_name: string;
@@ -69,7 +71,7 @@ export type StatusType = 'ABOVE' | 'WARNING' | 'BELOW';
 export interface JWTPayload {
   id: string;
   email: string;
-  role: 'ADMIN' | 'LEADER';
+  role: UserRole;
   teamId?: string;
 }
 

@@ -50,15 +50,15 @@ async function main() {
   console.log('🔐 Creating users...');
   const hashedPassword = await bcrypt.hash('Admin123!', 10);
 
-  const admin = await prisma.user.create({
-    data: {
-      email: 'admin@cmetrics.app',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: Role.ADMIN,
-    },
-  });
+    const admin = await prisma.user.create({
+      data: {
+        email: 'admin@cmetrics.app',
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: Role.SUPER_ADMIN,
+      },
+    });
 
   const leaderPassword = await bcrypt.hash('Leader123!', 10);
   const leaders = await Promise.all([
@@ -83,7 +83,7 @@ async function main() {
       },
     }),
   ]);
-  console.log(`✅ Created 1 admin + ${leaders.length} leaders`);
+  console.log(`✅ Created 1 super admin + ${leaders.length} leaders`);
 
   // Create global config
   console.log('⚙️  Creating global configuration...');
@@ -348,13 +348,13 @@ async function main() {
   console.log('\n✅ Seed complete!\n');
   console.log('📊 Summary:');
   console.log(`   Teams: ${teams.length}`);
-  console.log(`   Users: ${1 + leaders.length} (1 admin, ${leaders.length} leaders)`);
+  console.log(`   Users: ${1 + leaders.length} (1 super admin, ${leaders.length} leaders)`);
   console.log(`   Mentors: ${allMentors.length}`);
   console.log(`   Metrics: ${totalMetrics}`);
   console.log(`   Alert Rules: ${rules.length}`);
   console.log(`   Triggered Alerts: ${totalAlerts}`);
   console.log('\n🔑 Login Credentials:');
-  console.log('   Admin:  admin@cmetrics.app / Admin123!');
+  console.log('   Super Admin:  admin@cmetrics.app / Admin123!');
   console.log('   Kiran:  kiran@cmetrics.app / Leader123! (Team Alpha)');
   console.log('   Aisha:  aisha@cmetrics.app / Leader123! (Team Beta)\n');
 }
@@ -367,3 +367,7 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+
+
+

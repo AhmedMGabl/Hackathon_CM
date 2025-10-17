@@ -61,7 +61,7 @@ function App() {
           <Route
             path="/upload"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireSuperAdmin>
                 <Upload />
               </ProtectedRoute>
             }
