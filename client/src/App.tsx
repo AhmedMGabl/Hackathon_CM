@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Overview from './pages/Overview';
 import Mentors from './pages/Mentors';
 import TargetsTracker from './pages/TargetsTracker';
+import MeetingAlerts from './pages/MeetingAlerts';
 import './index.css';
 
 function App() {
@@ -48,10 +49,17 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/alerts"
+            element={
+              <ProtectedRoute>
+                <MeetingAlerts />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* TODO PHASE A: Add remaining pages */}
-          {/* <Route path="/alerts" element={<ProtectedRoute><MeetingAlerts /></ProtectedRoute>} />
-          <Route path="/admin/ingestion" element={<ProtectedRoute requireAdmin><AdminIngestion /></ProtectedRoute>} /> */}
+          {/* TODO PHASE B: Add AI endpoints & admin pages */}
+          {/* <Route path="/admin/ingestion" element={<ProtectedRoute requireAdmin><AdminIngestion /></ProtectedRoute>} /> */}
         </Routes>
       </AuthProvider>
     </BrowserRouter>
