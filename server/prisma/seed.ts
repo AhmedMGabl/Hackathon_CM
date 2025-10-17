@@ -48,11 +48,11 @@ async function main() {
 
   // Create users
   console.log('🔐 Creating users...');
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash('Admin123!', 10);
 
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@cmetrics.io',
+      email: 'admin@cmetrics.app',
       password: hashedPassword,
       firstName: 'Admin',
       lastName: 'User',
@@ -60,20 +60,29 @@ async function main() {
     },
   });
 
-  const leaders = await Promise.all(
-    teams.slice(0, 2).map((team, idx) =>
-      prisma.user.create({
-        data: {
-          email: `leader${idx + 1}@cmetrics.io`,
-          password: hashedPassword,
-          firstName: `Team`,
-          lastName: `Leader ${idx + 1}`,
-          role: Role.LEADER,
-          teamId: team.id,
-        },
-      })
-    )
-  );
+  const leaderPassword = await bcrypt.hash('Leader123!', 10);
+  const leaders = await Promise.all([
+    prisma.user.create({
+      data: {
+        email: 'kiran@cmetrics.app',
+        password: leaderPassword,
+        firstName: 'Kiran',
+        lastName: 'Patel',
+        role: Role.LEADER,
+        teamId: teams[0].id, // Alpha Squad
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: 'aisha@cmetrics.app',
+        password: leaderPassword,
+        firstName: 'Aisha',
+        lastName: 'Khan',
+        role: Role.LEADER,
+        teamId: teams[1].id, // Beta Force
+      },
+    }),
+  ]);
   console.log(`✅ Created 1 admin + ${leaders.length} leaders`);
 
   // Create global config
@@ -345,9 +354,9 @@ async function main() {
   console.log(`   Alert Rules: ${rules.length}`);
   console.log(`   Triggered Alerts: ${totalAlerts}`);
   console.log('\n🔑 Login Credentials:');
-  console.log('   Admin:   admin@cmetrics.io / admin123');
-  console.log('   Leader1: leader1@cmetrics.io / admin123');
-  console.log('   Leader2: leader2@cmetrics.io / admin123\n');
+  console.log('   Admin:  admin@cmetrics.app / Admin123!');
+  console.log('   Kiran:  kiran@cmetrics.app / Leader123! (Team Alpha)');
+  console.log('   Aisha:  aisha@cmetrics.app / Leader123! (Team Beta)\n');
 }
 
 main()

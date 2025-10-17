@@ -19,8 +19,8 @@ declare global {
  */
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
-    // Get token from cookie
-    const token = req.cookies?.auth_token;
+    // Get token from cookie (changed from auth_token to token)
+    const token = req.cookies?.token;
 
     if (!token) {
       throw new UnauthorizedError('No authentication token provided');
@@ -50,7 +50,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
  */
 export function optionalAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const token = req.cookies?.auth_token;
+    const token = req.cookies?.token;
 
     if (token) {
       const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
