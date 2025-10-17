@@ -27,6 +27,18 @@ type MentorListItem = {
   referralPaid: number;
 };
 
+type TeamGroup = {
+  teamName: string;
+  mentors: MentorListItem[];
+  summary: {
+    mentorCount: number;
+    avgWeightedScore: number;
+    aboveCount: number;
+    warningCount: number;
+    belowCount: number;
+  };
+};
+
 const statusFilters: Array<{ label: string; value: 'ALL' | 'ABOVE' | 'WARNING' | 'BELOW' }> = [
   { label: 'All', value: 'ALL' },
   { label: 'Above', value: 'ABOVE' },
@@ -113,6 +125,111 @@ export default function Mentors() {
     });
   }, [mentors, search, statusFilter]);
 
+  const groupedMentors = useMemo<TeamGroup[]>(() => {
+    const groups = new Map<string, MentorListItem[]>();
+    filteredMentors.forEach((mentor) => {
+      if (!groups.has(mentor.teamName)) {
+        groups.set(mentor.teamName, []);
+      }
+      groups.get(mentor.teamName)!.push(mentor);
+    });
+
+    return Array.from(groups.entries())
+      .map(([teamName, teamMentors]) => {
+        const mentorCount = teamMentors.length;
+        const avgWeightedScore =
+          teamMentors.reduce((sum, m) => sum + (m.weightedScore || 0), 0) / Math.max(mentorCount, 1);
+        const aboveCount = teamMentors.filter((m) => m.status === 'ABOVE').length;
+        const warningCount = teamMentors.filter((m) => m.status === 'WARNING').length;
+        const belowCount = teamMentors.filter((m) => m.status === 'BELOW').length;
+        return {
+          teamName,
+          mentors: teamMentors,
+          summary: {
+            mentorCount,
+            avgWeightedScore,
+            aboveCount,
+            warningCount,
+            belowCount,
+          },
+        };
+      })
+      .sort((a, b) => a.teamName.localeCompare(b.teamName));
+  }, [filteredMentors]);
+
+  const grandTotals = useMemo(() => {
+    const mentorCount = filteredMentors.length;
+    const avgWeightedScore =
+      filteredMentors.reduce((sum, m) => sum + (m.weightedScore || 0), 0) / Math.max(mentorCount, 1);
+    const aboveCount = filteredMentors.filter((m) => m.status === 'ABOVE').length;
+    const warningCount = filteredMentors.filter((m) => m.status === 'WARNING').length;
+    const belowCount = filteredMentors.filter((m) => m.status === 'BELOW').length;
+    return { mentorCount, avgWeightedScore, aboveCount, warningCount, belowCount };
+  }, [filteredMentors]);
+
+  const exportCsv = () => {
+    if (groupedMentors.length === 0) {
+      return;
+    }
+
+    const header = [
+      'Team',
+      'Mentor ID',
+      'Mentor Name',
+      'Weighted Score',
+      'Class Consumption %',
+      'Super Class %',
+      'Upgrade Rate %',
+      'Fixed Rate %',
+      'Status',
+      'Targets Hit',
+      'Total Students',
+      'Total Leads',
+      'Recovered Leads',
+      'Unrecovered Leads',
+      'Conversion Rate %',
+      'Referral Leads',
+      'Referral Showups',
+      'Referral Paid',
+    ];
+
+    const rows: string[][] = [header];
+
+    groupedMentors.forEach((group) => {
+      group.mentors.forEach((mentor) => {
+        rows.push([
+          group.teamName,
+          mentor.mentorId,
+          mentor.mentorName,
+          mentor.weightedScore.toFixed(1),
+          mentor.avgCcPct.toFixed(1),
+          mentor.avgScPct.toFixed(1),
+          mentor.avgUpPct.toFixed(1),
+          mentor.avgFixedPct.toFixed(1),
+          mentor.status,
+          mentor.targetsHit.toString(),
+          mentor.totalStudents.toString(),
+          mentor.totalLeads.toString(),
+          mentor.recoveredLeads.toString(),
+          mentor.unrecoveredLeads.toString(),
+          mentor.conversionRatePct.toFixed(1),
+          mentor.referralLeads.toString(),
+          mentor.referralShowups.toString(),
+          mentor.referralPaid.toString(),
+        ]);
+      });
+    });
+
+    const csvContent = rows.map((row) => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'mentor-performance.csv';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: tokens.colors.surface.dark }}>
       <header
@@ -181,129 +298,243 @@ export default function Mentors() {
               </button>
             ))}
           </div>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by mentor, ID, or team…"
-            style={{
-              padding: '10px 16px',
-              borderRadius: tokens.radii.md,
-              border: `1px solid ${tokens.colors.neutral[800]}`,
-              background: tokens.colors.surface.card,
-              color: tokens.colors.neutral[100],
-              minWidth: '240px',
-            }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[3] }}>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by mentor, ID, or team…"
+              style={{
+                padding: '10px 16px',
+                borderRadius: tokens.radii.md,
+                border: `1px solid ${tokens.colors.neutral[800]}`,
+                background: tokens.colors.surface.card,
+                color: tokens.colors.neutral[100],
+                minWidth: '240px',
+              }}
+            />
+            <button
+              onClick={exportCsv}
+              disabled={filteredMentors.length === 0}
+              style={{
+                padding: '10px 16px',
+                borderRadius: tokens.radii.md,
+                border: 'none',
+                background: filteredMentors.length === 0 ? tokens.colors.neutral[800] : tokens.colors.primary[600],
+                color: tokens.colors.neutral[50],
+                fontWeight: 600,
+                cursor: filteredMentors.length === 0 ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Export CSV
+            </button>
+          </div>
+        </section>
+
+        <section
+          style={{
+            display: 'flex',
+            gap: tokens.spacing[3],
+            flexWrap: 'wrap',
+            background: tokens.colors.surface.card,
+            borderRadius: tokens.radii.lg,
+            padding: tokens.spacing[4],
+            border: `1px solid ${tokens.colors.neutral[900]}`,
+          }}
+        >
+          <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <div style={{ fontSize: '13px', color: tokens.colors.neutral[400] }}>Mentors</div>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: tokens.colors.neutral[50] }}>{grandTotals.mentorCount}</div>
+          </div>
+          <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <div style={{ fontSize: '13px', color: tokens.colors.neutral[400] }}>Average Weighted Score</div>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: tokens.colors.primary[500] }}>
+              {grandTotals.avgWeightedScore.toFixed(1)}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: tokens.spacing[2], flex: '1 1 240px', minWidth: '240px' }}>
+            <div
+              style={{
+                flex: 1,
+                background: tokens.colors.success[900] + '25',
+                borderRadius: tokens.radii.md,
+                padding: tokens.spacing[3],
+                color: tokens.colors.success[500],
+                border: `1px solid ${tokens.colors.success[800]}`,
+              }}
+            >
+              <div style={{ fontSize: '12px' }}>Above</div>
+              <div style={{ fontSize: '20px', fontWeight: 700 }}>{grandTotals.aboveCount}</div>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                background: tokens.colors.warning[900] + '25',
+                borderRadius: tokens.radii.md,
+                padding: tokens.spacing[3],
+                color: tokens.colors.warning[500],
+                border: `1px solid ${tokens.colors.warning[800]}`,
+              }}
+            >
+              <div style={{ fontSize: '12px' }}>Warning</div>
+              <div style={{ fontSize: '20px', fontWeight: 700 }}>{grandTotals.warningCount}</div>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                background: tokens.colors.danger[900] + '25',
+                borderRadius: tokens.radii.md,
+                padding: tokens.spacing[3],
+                color: tokens.colors.danger[500],
+                border: `1px solid ${tokens.colors.danger[800]}`,
+              }}
+            >
+              <div style={{ fontSize: '12px' }}>Below</div>
+              <div style={{ fontSize: '20px', fontWeight: 700 }}>{grandTotals.belowCount}</div>
+            </div>
+          </div>
         </section>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '48px', color: tokens.colors.neutral[500] }}>Loading mentors…</div>
-        ) : filteredMentors.length === 0 ? (
+        ) : groupedMentors.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px', color: tokens.colors.neutral[500] }}>
             No mentors match the selected filters.
           </div>
         ) : (
-          <section
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '20px',
-            }}
-          >
-            {filteredMentors.map((mentor) => {
-              const conversionRate = mentor.conversionRatePct;
-              return (
-                <div
-                  key={mentor.id}
-                  style={{
-                    background: tokens.colors.surface.card,
-                    borderRadius: tokens.radii.lg,
-                    padding: tokens.spacing[5],
-                    border: `1px solid ${tokens.colors.neutral[900]}`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: tokens.spacing[4],
-                    boxShadow: tokens.shadows.card,
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <h2 style={{ fontSize: '18px', fontWeight: 700, color: tokens.colors.neutral[100] }}>{mentor.mentorName}</h2>
-                      <p style={{ fontSize: '12px', color: tokens.colors.neutral[400] }}>
-                        {mentor.mentorId} · {mentor.teamName}
-                      </p>
-                    </div>
-                    <StatusBadge status={mentor.status} />
-                  </div>
+          groupedMentors.map((group) => (
+            <section
+              key={group.teamName}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: tokens.spacing[4],
+                background: tokens.colors.surface.card,
+                borderRadius: tokens.radii.lg,
+                padding: tokens.spacing[5],
+                border: `1px solid ${tokens.colors.neutral[900]}`,
+              }}
+            >
+              <header
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: tokens.spacing[3],
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: 700, color: tokens.colors.neutral[100] }}>{group.teamName}</h2>
+                  <p style={{ fontSize: '12px', color: tokens.colors.neutral[400] }}>
+                    {group.summary.mentorCount} mentors · Avg. score {group.summary.avgWeightedScore.toFixed(1)}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: tokens.spacing[2] }}>
+                  <StatusBadge status="ABOVE" />
+                  <span style={{ fontSize: '12px', color: tokens.colors.neutral[400] }}>{group.summary.aboveCount}</span>
+                  <StatusBadge status="WARNING" />
+                  <span style={{ fontSize: '12px', color: tokens.colors.neutral[400] }}>{group.summary.warningCount}</span>
+                  <StatusBadge status="BELOW" />
+                  <span style={{ fontSize: '12px', color: tokens.colors.neutral[400] }}>{group.summary.belowCount}</span>
+                </div>
+              </header>
 
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <MetricPill label="Weighted Score" value={mentor.weightedScore} />
-                    <MetricPill label="Class Consumption" value={mentor.avgCcPct} unit="%" />
-                    <MetricPill label="Upgrade Rate" value={mentor.avgUpPct} unit="%" />
-                    <MetricPill label="Fixed Rate" value={mentor.avgFixedPct} unit="%" />
-                  </div>
-
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '16px',
+                }}
+              >
+                {group.mentors.map((mentor) => (
                   <div
+                    key={mentor.id}
                     style={{
+                      background: tokens.colors.surface.dark,
+                      borderRadius: tokens.radii.lg,
+                      padding: tokens.spacing[4],
+                      border: `1px solid ${tokens.colors.neutral[900]}`,
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: tokens.spacing[2],
-                      fontSize: '12px',
-                      color: tokens.colors.neutral[400],
-                      background: tokens.colors.surface.dark,
-                      padding: tokens.spacing[3],
-                      borderRadius: tokens.radii.md,
-                      border: `1px solid ${tokens.colors.neutral[900]}`,
+                      gap: tokens.spacing[3],
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Students</span>
-                      <span style={{ color: tokens.colors.neutral[100] }}>{mentor.totalStudents}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <h3 style={{ fontSize: '16px', fontWeight: 600, color: tokens.colors.neutral[100] }}>
+                          {mentor.mentorName}
+                        </h3>
+                        <p style={{ fontSize: '12px', color: tokens.colors.neutral[400] }}>
+                          {mentor.mentorId} · {mentor.teamName}
+                        </p>
+                      </div>
+                      <StatusBadge status={mentor.status} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Leads · Recovered</span>
-                      <span style={{ color: tokens.colors.success[400] }}>
-                        {mentor.recoveredLeads}/{mentor.totalLeads}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Conversion Rate</span>
-                      <span style={{ color: tokens.colors.primary[400] }}>{conversionRate.toFixed(1)}%</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Referrals · Paid</span>
-                      <span style={{ color: tokens.colors.neutral[100] }}>
-                        {mentor.referralPaid}/{mentor.referralLeads}
-                      </span>
-                    </div>
-                  </div>
 
-                  <button
-                    onClick={() => navigate(`/mentors/${mentor.id}`)}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: tokens.radii.md,
-                      border: 'none',
-                      background: tokens.colors.primary[600],
-                      color: tokens.colors.neutral[50],
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                    }}
-                  >
-                    View Details
-                  </button>
-                </div>
-              );
-            })}
-          </section>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                      <MetricPill label="Weighted Score" value={mentor.weightedScore} />
+                      <MetricPill label="Class Consumption" value={mentor.avgCcPct} unit="%" />
+                      <MetricPill label="Upgrade Rate" value={mentor.avgUpPct} unit="%" />
+                      <MetricPill label="Fixed Rate" value={mentor.avgFixedPct} unit="%" />
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: tokens.spacing[1],
+                        fontSize: '12px',
+                        color: tokens.colors.neutral[400],
+                        background: tokens.colors.surface.card,
+                        padding: tokens.spacing[3],
+                        borderRadius: tokens.radii.md,
+                        border: `1px solid ${tokens.colors.neutral[900]}`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Students</span>
+                        <span style={{ color: tokens.colors.neutral[100] }}>{mentor.totalStudents}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Leads · Recovered</span>
+                        <span style={{ color: tokens.colors.success[400] }}>
+                          {mentor.recoveredLeads}/{mentor.totalLeads}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Conversion Rate</span>
+                        <span style={{ color: tokens.colors.primary[400] }}>{mentor.conversionRatePct.toFixed(1)}%</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Referrals · Paid</span>
+                        <span style={{ color: tokens.colors.neutral[100] }}>
+                          {mentor.referralPaid}/{mentor.referralLeads}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => navigate(`/mentors/${mentor.id}`)}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: tokens.radii.md,
+                        border: 'none',
+                        background: tokens.colors.primary[600],
+                        color: tokens.colors.neutral[50],
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                      }}
+                    >
+                      View Details
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
         )}
       </main>
     </div>
   );
 }
-
-
-
-
-
