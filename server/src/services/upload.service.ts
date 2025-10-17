@@ -20,8 +20,8 @@ function fileFilter(req: any, file: Express.Multer.File, cb: multer.FileFilterCa
   const mimeType = file.mimetype;
 
   if (
-    !UPLOAD_LIMITS.ALLOWED_EXTENSIONS.includes(ext) ||
-    !UPLOAD_LIMITS.ALLOWED_MIME_TYPES.includes(mimeType)
+    !(UPLOAD_LIMITS.ALLOWED_EXTENSIONS as readonly string[]).includes(ext) ||
+    !(UPLOAD_LIMITS.ALLOWED_MIME_TYPES as readonly string[]).includes(mimeType)
   ) {
     cb(
       new BadRequestError(
