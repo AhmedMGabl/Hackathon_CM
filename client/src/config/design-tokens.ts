@@ -125,17 +125,17 @@ export const statusColors = {
   above: {
     bg: colors.success[50],
     text: colors.success[700],
-    border: colors.success[200],
+    border: colors.success[100],
   },
   warning: {
     bg: colors.warning[50],
     text: colors.warning[700],
-    border: colors.warning[200],
+    border: colors.warning[100],
   },
   below: {
     bg: colors.danger[50],
     text: colors.danger[700],
-    border: colors.danger[200],
+    border: colors.danger[100],
   },
 } as const;
 

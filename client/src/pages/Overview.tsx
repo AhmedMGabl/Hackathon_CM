@@ -1,4 +1,3 @@
-import React from 'react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { chartColors } from '@/config/design-tokens';
 import { mockKPIData, mockWeeklyData, mockTeamRadarData, mockAgents } from '@/lib/mockData';
@@ -41,7 +40,7 @@ export default function Overview() {
             </div>
             {/* Sparkline */}
             <ResponsiveContainer width="100%" height={40}>
-              <LineChart data={kpi.trend.map((v, i) => ({ value: v }))}>
+              <LineChart data={kpi.trend.map((v) => ({ value: v }))}>
                 <Line
                   type="monotone"
                   dataKey="value"
