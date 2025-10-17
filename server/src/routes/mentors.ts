@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import type { MentorStats as MentorStatsModel } from '@prisma/client';
+import type { MentorStats as MentorStatsModel, Student as StudentModel } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -14,6 +14,145 @@ const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(100),
 });
+
+function buildSummaryFromStat(stat?: MentorStatsModel | null) {
+  if (!stat) {
+    return {
+      studentCounts: { total: 0, active: 0 },
+      classConsumptionBuckets: [
+        { label: '0', value: 0 },
+        { label: '1-7', value: 0 },
+        { label: '8-11', value: 0 },
+        { label: '12-14', value: 0 },
+        { label: '15-19', value: 0 },
+        { label: '20+', value: 0 },
+      ],
+      engagement: {
+        avgClassConsumption: 0,
+        superClassPct: 0,
+        excellentStudentRate: 0,
+      },
+      fixedRate: {
+        fixedStudents: 0,
+        totalFixable: 0,
+        fixedRatePct: 0,
+      },
+      upgrade: {
+        firstPurchaseCount: 0,
+        upgradedCount: 0,
+        upgradeRatePct: 0,
+      },
+      leads: {
+        totalLeads: 0,
+        recoveredLeads: 0,
+        unrecoveredLeads: 0,
+        conversionRatePct: 0,
+      },
+      referral: {
+        referralLeads: 0,
+        referralShowups: 0,
+        referralPaid: 0,
+      },
+      composite: {
+        weightedScore: 0,
+        targetsHit: 0,
+        status: 'BELOW' as const,
+      },
+    };
+  }
+
+  return {
+    studentCounts: {
+      total: stat.totalStudents,
+      active: stat.activeStudents,
+    },
+    classConsumptionBuckets: [
+      { label: '0', value: stat.cc0Students },
+      { label: '1-7', value: stat.cc1to7Students },
+      { label: '8-11', value: stat.cc8to11Students },
+      { label: '12-14', value: stat.cc12to14Students },
+      { label: '15-19', value: stat.cc15to19Students },
+      { label: '20+', value: stat.cc20PlusStudents },
+    ],
+    engagement: {
+      avgClassConsumption: stat.avgClassConsumption,
+      superClassPct: stat.superClassPct,
+      excellentStudentRate: stat.excellentStudentRate,
+    },
+    fixedRate: {
+      fixedStudents: stat.fixedStudents,
+      totalFixable: stat.totalFixable,
+      fixedRatePct: stat.fixedRatePct,
+    },
+    upgrade: {
+      firstPurchaseCount: stat.firstPurchaseCount,
+      upgradedCount: stat.upgradedCount,
+      upgradeRatePct: stat.upgradeRatePct,
+    },
+    leads: {
+      totalLeads: stat.totalLeads,
+      recoveredLeads: stat.recoveredLeads,
+      unrecoveredLeads: stat.unrecoveredLeads,
+      conversionRatePct: stat.conversionRatePct,
+    },
+    referral: {
+      referralLeads: stat.referralLeads,
+      referralShowups: stat.referralShowups,
+      referralPaid: stat.referralPaid,
+    },
+    composite: {
+      weightedScore: stat.weightedScore,
+      targetsHit: stat.targetsHit,
+      status: stat.status,
+    },
+  };
+}
+
+function buildTimeSeries(stats: MentorStatsModel[]) {
+  return stats
+    .map((entry) => ({
+      periodDate: entry.periodDate,
+      weightedScore: entry.weightedScore,
+      avgClassConsumption: entry.avgClassConsumption,
+      superClassPct: entry.superClassPct,
+      upgradeRatePct: entry.upgradeRatePct,
+      fixedRatePct: entry.fixedRatePct,
+      conversionRatePct: entry.conversionRatePct,
+      targetsHit: entry.targetsHit,
+      status: entry.status,
+    }))
+    .sort((a, b) => a.periodDate.getTime() - b.periodDate.getTime());
+}
+
+function buildStudentInsight(students: StudentModel[]) {
+  const total = students.length;
+  const fixedCount = students.filter((s) => s.isFixed).length;
+  const recoveredCount = students.filter((s) => s.isRecovered).length;
+
+  const withEngagement = students.map((student) => ({
+    ...student,
+    classConsumptionThisMonth: student.classConsumptionThisMonth ?? 0,
+  }));
+
+  const topPerformers = [...withEngagement]
+    .sort((a, b) => b.classConsumptionThisMonth - a.classConsumptionThisMonth)
+    .slice(0, 10);
+
+  const needsAttention = [...withEngagement]
+    .sort((a, b) => a.classConsumptionThisMonth - b.classConsumptionThisMonth)
+    .slice(0, 10);
+
+  return {
+    totals: {
+      total,
+      fixedCount,
+      recoveredCount,
+    },
+    topPerformers,
+    needsAttention,
+    sample: withEngagement.slice(0, 100),
+  };
+}
 
 /**
  * GET /api/mentors
@@ -76,7 +215,7 @@ router.get('/', authenticate, async (req, res, next) => {
     });
 
     // Get stats for these mentors
-    const mentorIds = mentors.map(m => m.id);
+    const mentorIds = mentors.map((m) => m.id);
     const stats = await prisma.mentorStats.findMany({
       where: {
         mentorId: { in: mentorIds },
@@ -87,8 +226,9 @@ router.get('/', authenticate, async (req, res, next) => {
     const statsMap = new Map<string, MentorStatsModel>(stats.map((s) => [s.mentorId, s]));
 
     // Combine mentor info with stats
-    let mentorsWithStats = mentors.map(mentor => {
+    let mentorsWithStats = mentors.map((mentor) => {
       const stat = statsMap.get(mentor.id);
+      const summary = buildSummaryFromStat(stat);
 
       return {
         id: mentor.id,
@@ -96,28 +236,28 @@ router.get('/', authenticate, async (req, res, next) => {
         mentorName: mentor.mentorName,
         teamName: mentor.team.name,
         teamId: mentor.teamId,
-        avgCcPct: stat?.avgClassConsumption || 0,
-        avgScPct: stat?.superClassPct || 0,
-        avgUpPct: stat?.upgradeRatePct || 0,
-        avgFixedPct: stat?.fixedRatePct || 0,
-        weightedScore: stat?.weightedScore || 0,
-        status: stat?.status || 'BELOW',
-        targetsHit: stat?.targetsHit || 0,
-        rank: stat?.rank || null,
-        totalStudents: stat?.totalStudents || 0,
-        totalLeads: stat?.totalLeads || 0,
-        recoveredLeads: stat?.recoveredLeads || 0,
-        unrecoveredLeads: stat?.unrecoveredLeads || 0,
-        conversionRatePct: stat?.conversionRatePct || 0,
-        referralLeads: stat?.referralLeads || 0,
-        referralShowups: stat?.referralShowups || 0,
-        referralPaid: stat?.referralPaid || 0,
+        avgCcPct: summary.engagement.avgClassConsumption,
+        avgScPct: summary.engagement.superClassPct,
+        avgUpPct: summary.upgrade.upgradeRatePct,
+        avgFixedPct: summary.fixedRate.fixedRatePct,
+        weightedScore: summary.composite.weightedScore,
+        status: summary.composite.status,
+        targetsHit: summary.composite.targetsHit,
+        rank: stat?.rank ?? null,
+        totalStudents: summary.studentCounts.total,
+        totalLeads: summary.leads.totalLeads,
+        recoveredLeads: summary.leads.recoveredLeads,
+        unrecoveredLeads: summary.leads.unrecoveredLeads,
+        conversionRatePct: summary.leads.conversionRatePct,
+        referralLeads: summary.referral.referralLeads,
+        referralShowups: summary.referral.referralShowups,
+        referralPaid: summary.referral.referralPaid,
       };
     });
 
     // Filter by status if requested
     if (status) {
-      mentorsWithStats = mentorsWithStats.filter(m => m.status === status);
+      mentorsWithStats = mentorsWithStats.filter((m) => m.status === status);
     }
 
     // Sort by weighted score desc
@@ -167,33 +307,41 @@ router.get('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    // Get latest stats
     const latestStat = await prisma.mentorStats.findFirst({
       where: { mentorId: mentor.id },
       orderBy: { periodDate: 'desc' },
     });
 
-    // Get historical stats (last 8 weeks)
     const historicalStats = await prisma.mentorStats.findMany({
       where: { mentorId: mentor.id },
       orderBy: { periodDate: 'desc' },
-      take: 8,
+      take: 12,
     });
 
-    // Get student list (sample)
-    const students = await prisma.student.findMany({
+    const studentRecords = await prisma.student.findMany({
       where: { mentorId: mentor.mentorId },
-      take: 100,
       orderBy: { classConsumptionThisMonth: 'desc' },
+      take: 200,
     });
+
+    const summary = buildSummaryFromStat(latestStat);
+    const timeSeries = buildTimeSeries(historicalStats);
+    const studentInsights = buildStudentInsight(studentRecords);
 
     res.json({
       success: true,
       data: {
-        mentor,
-        latestStats: latestStat,
-        historicalStats,
-        students,
+        mentor: {
+          id: mentor.id,
+          mentorId: mentor.mentorId,
+          mentorName: mentor.mentorName,
+          teamId: mentor.teamId,
+          teamName: mentor.team.name,
+        },
+        summary,
+        timeSeries,
+        studentInsights,
+        latestStat,
       },
     });
   } catch (error) {

@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Overview from './pages/Overview';
 import Mentors from './pages/Mentors';
+import MentorDetail from './pages/MentorDetail';
 import TargetsTracker from './pages/TargetsTracker';
 import MeetingAlerts from './pages/MeetingAlerts';
 import Upload from './pages/Upload';
@@ -39,6 +40,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Mentors />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mentors/:id"
+            element={
+              <ProtectedRoute>
+                <MentorDetail />
               </ProtectedRoute>
             }
           />
