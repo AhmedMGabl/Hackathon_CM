@@ -6,6 +6,7 @@ import Overview from './pages/Overview';
 import Mentors from './pages/Mentors';
 import TargetsTracker from './pages/TargetsTracker';
 import MeetingAlerts from './pages/MeetingAlerts';
+import Upload from './pages/Upload';
 import './index.css';
 
 function App() {
@@ -57,9 +58,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* TODO PHASE B: Add AI endpoints & admin pages */}
-          {/* <Route path="/admin/ingestion" element={<ProtectedRoute requireAdmin><AdminIngestion /></ProtectedRoute>} /> */}
+          <Route
+            path="/upload"
+            element={
+              <ProtectedRoute>
+                <Upload />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
