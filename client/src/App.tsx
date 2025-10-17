@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Overview from './pages/Overview';
+import Mentors from './pages/Mentors';
 import './index.css';
 
 function App() {
@@ -30,10 +31,17 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/mentors"
+            element={
+              <ProtectedRoute>
+                <Mentors />
+              </ProtectedRoute>
+            }
+          />
 
           {/* TODO PHASE A: Add remaining pages */}
-          {/* <Route path="/mentors" element={<ProtectedRoute><Mentors /></ProtectedRoute>} />
-          <Route path="/targets" element={<ProtectedRoute><TargetsTracker /></ProtectedRoute>} />
+          {/* <Route path="/targets" element={<ProtectedRoute><TargetsTracker /></ProtectedRoute>} />
           <Route path="/alerts" element={<ProtectedRoute><MeetingAlerts /></ProtectedRoute>} />
           <Route path="/admin/ingestion" element={<ProtectedRoute requireAdmin><AdminIngestion /></ProtectedRoute>} /> */}
         </Routes>
