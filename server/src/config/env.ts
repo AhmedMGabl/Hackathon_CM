@@ -32,6 +32,14 @@ const envSchema = z.object({
   OPENROUTER_MODEL: z.string().default('anthropic/claude-3.5-sonnet'),
   OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
 
+  // Email (SMTP)
+  EMAIL_HOST: z.string().optional(),
+  EMAIL_PORT: z.string().optional().transform((val) => val ? Number(val) : 587),
+  EMAIL_USER: z.string().optional(),
+  EMAIL_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().email().optional().default('noreply@cmetrics.app'),
+  EMAIL_FROM_NAME: z.string().optional().default('CMetrics Platform'),
+
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.string().default('900000').transform(Number),
   RATE_LIMIT_MAX_REQUESTS: z.string().default('100').transform(Number),

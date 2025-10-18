@@ -13,16 +13,17 @@ datasource db {
 
 // User authentication and authorization
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  role      Role     @default(LEADER)
-  teamId    String?
-  team      Team?    @relation(fields: [teamId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        Role     @default(LEADER)
+  teamId      String?
+  team        Team?    @relation(fields: [teamId], references: [id])
+  calendlyUrl String?  // Team leader's Calendly booking link
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([email])
   @@index([teamId])
@@ -52,13 +53,14 @@ model Team {
 
 // Course Mentor (aka Agent)
 model Mentor {
-  id        String   @id @default(cuid())
-  mentorId  String   @unique // External ID from Excel/Sheets
+  id         String   @id @default(cuid())
+  mentorId   String   @unique // External ID from Excel/Sheets
   mentorName String
-  teamId    String
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  email      String?  // Mentor's email for meeting invites
+  teamId     String
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   metrics  MetricDaily[]
   stats    MentorStats[]
@@ -68,6 +70,7 @@ model Mentor {
   @@index([teamId])
   @@index([mentorName])
   @@index([teamId, mentorId])
+  @@index([email])
 }
 
 // Daily metrics for each mentor
@@ -402,45 +405,53 @@ enum SourceType {
 
 // Meeting Prep for underperformers
 model Meeting {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   title           String
   scheduledDate   DateTime?
   status          MeetingStatus @default(PENDING)
-  scoreThreshold  Float?          // e.g., 60 = only mentors below 60% weighted score
+  scoreThreshold  Float?        // e.g., 60 = only mentors below 60% weighted score
   notes           String?
-  aiInsights      Json?           // AI-generated insights per mentor
+  aiInsights      Json?         // AI-generated insights per mentor
+  emailsSent      Boolean       @default(false) // Track if invitation emails were sent
+  emailsSentAt    DateTime?     // When emails were sent
   createdBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  attendees       MeetingAttendee[]
+  attendees MeetingAttendee[]
 
   @@index([status, scheduledDate])
   @@index([createdAt])
+  @@index([emailsSent])
 }
 
 enum MeetingStatus {
-  PENDING       // Not scheduled yet
-  SCHEDULED     // Date set
-  COMPLETED     // Meeting happened
-  CANCELLED     // Cancelled
+  PENDING   // Not scheduled yet
+  SCHEDULED // Date set
+  COMPLETED // Meeting happened
+  CANCELLED // Cancelled
 }
 
 model MeetingAttendee {
-  id              String   @id @default(cuid())
-  meetingId       String
-  meeting         Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  mentorId        String
-  mentor          Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  attended        Boolean  @default(false)
-  aiPrepNotes     Json?    // AI-generated prep notes for this specific mentor
-  manualNotes     String?  // Manual notes added by leader
-  actionItems     String[] // Follow-up action items
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  meetingId        String
+  meeting          Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  mentorId         String
+  mentor           Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  attended         Boolean  @default(false)
+  emailSent        Boolean  @default(false) // Track if email was sent to this mentor
+  emailSentAt      DateTime? // When email was sent
+  emailReplied     Boolean  @default(false) // Track if mentor replied to email
+  emailRepliedAt   DateTime? // When mentor replied
+  aiPrepNotes      Json?    // AI-generated prep notes for this specific mentor
+  manualNotes      String?  // Manual notes added by leader
+  actionItems      String[] // Follow-up action items
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@unique([meetingId, mentorId])
   @@index([meetingId])
   @@index([mentorId])
+  @@index([emailSent, emailReplied])
 }
 

@@ -4,6 +4,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
 import meetingPrepService from '../services/meeting-prep.service.js';
+import emailService from '../services/email.service.js';
 import logger from '../utils/logger.js';
 
 const router = Router();
@@ -399,6 +400,162 @@ router.delete('/:id', authenticate, requireRole('ADMIN', 'SUPER_ADMIN'), async (
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to delete meeting',
+      },
+    });
+  }
+});
+
+/**
+ * POST /api/meetings/:id/send-invites
+ * Send email invites to all meeting attendees
+ */
+router.post('/:id/send-invites', authenticate, requireRole('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Get meeting with attendees
+    const meeting = await prisma.meeting.findUnique({
+      where: { id },
+      include: {
+        attendees: {
+          include: {
+            mentor: {
+              select: {
+                id: true,
+                mentorId: true,
+                mentorName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!meeting) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Meeting not found',
+        },
+      });
+    }
+
+    // Get team leader info
+    const teamLeader = await prisma.user.findUnique({
+      where: { id: req.user?.id },
+      select: {
+        firstName: true,
+        lastName: true,
+        email: true,
+        calendlyUrl: true,
+      },
+    });
+
+    if (!teamLeader) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Team leader not found',
+        },
+      });
+    }
+
+    if (!teamLeader.calendlyUrl) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'CALENDLY_NOT_SET',
+          message: 'Please add your Calendly URL to your profile before sending invites',
+        },
+      });
+    }
+
+    if (!emailService.isEnabled()) {
+      return res.status(503).json({
+        success: false,
+        error: {
+          code: 'EMAIL_NOT_CONFIGURED',
+          message: 'Email service is not configured. Please contact your administrator',
+        },
+      });
+    }
+
+    // Send emails to attendees
+    const results = [];
+    for (const attendee of meeting.attendees) {
+      if (!attendee.mentor.email) {
+        logger.warn('Mentor has no email, skipping', { mentorId: attendee.mentor.mentorId });
+        results.push({
+          mentorId: attendee.mentor.mentorId,
+          mentorName: attendee.mentor.mentorName,
+          success: false,
+          error: 'No email address',
+        });
+        continue;
+      }
+
+      const prepNotes = attendee.aiPrepNotes as any;
+      const emailSent = await emailService.sendMeetingInvitation({
+        mentorName: attendee.mentor.mentorName,
+        mentorEmail: attendee.mentor.email,
+        teamLeaderName: `${teamLeader.firstName} ${teamLeader.lastName}`,
+        teamLeaderEmail: teamLeader.email,
+        calendlyUrl: teamLeader.calendlyUrl,
+        meetingTitle: meeting.title,
+        missedTargets: prepNotes?.missedTargets || [],
+        summary: prepNotes?.summary || 'Performance review meeting',
+        talkingPoints: prepNotes?.talkingPoints || [],
+      });
+
+      if (emailSent) {
+        // Update attendee record
+        await prisma.meetingAttendee.update({
+          where: { id: attendee.id },
+          data: {
+            emailSent: true,
+            emailSentAt: new Date(),
+          },
+        });
+      }
+
+      results.push({
+        mentorId: attendee.mentor.mentorId,
+        mentorName: attendee.mentor.mentorName,
+        success: emailSent,
+      });
+    }
+
+    // Update meeting record
+    await prisma.meeting.update({
+      where: { id },
+      data: {
+        emailsSent: true,
+        emailsSentAt: new Date(),
+      },
+    });
+
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+
+    res.json({
+      success: true,
+      data: {
+        total: results.length,
+        sent: successCount,
+        failed: failCount,
+        results,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to send meeting invites', { error });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to send meeting invites',
       },
     });
   }
