@@ -123,7 +123,7 @@ export default function AICoachPanel({ agentId, metrics, targets }: AICoachPanel
           {/* Input Area */}
           <div className="mb-3">
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Ask a question (optional)
+              Ask about your performance data (optional)
             </label>
             <div className="flex gap-2">
               <input
@@ -131,7 +131,7 @@ export default function AICoachPanel({ agentId, metrics, targets }: AICoachPanel
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
-                placeholder="e.g., How can I improve my CC%?"
+                placeholder="e.g., What should I focus on this week?"
                 className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isLoading}
               />

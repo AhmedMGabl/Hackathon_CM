@@ -39,10 +39,10 @@ export default function AIHelpButton() {
   };
 
   const quickQuestions = [
-    'What is CC% and how is it calculated?',
-    'How does weekly pacing work?',
-    'What is a weighted score?',
-    'How are targets set?',
+    'How do I upload data?',
+    'How do I schedule a performance meeting?',
+    'Where can I see the latest metrics?',
+    'How do I export reports?',
   ];
 
   return (
