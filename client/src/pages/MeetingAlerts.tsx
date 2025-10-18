@@ -1,19 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { mentorApi, configApi } from '../lib/api';
-
-interface SelectedMentor {
-  id: string;
-  mentorId: string;
-  mentorName: string;
-  teamName: string;
-  weightedScore: number;
-  targetsHit: number;
-  avgCcPct: number;
-  avgScPct: number;
-  avgUpPct: number;
-  avgFixedPct: number;
-}
+import { mentorApi } from '../lib/api';
 
 interface MeetingPrep {
   mentorId: string;
