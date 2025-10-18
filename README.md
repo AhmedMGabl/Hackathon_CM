@@ -5,7 +5,8 @@ Full-stack monolith for team performance analytics with AI-powered coaching. Bui
 ## Features
 
 - **Real-time Dashboards**: KPIs, trends, rankings, alerts with Recharts
-- **Multi-source Ingestion**: Excel (.xlsx/.xls) + Google Sheets
+- **Multi-source Ingestion**: Excel (.xlsx/.xls) web uploads + optional folder/Google Sheets
+- **Production Web Upload**: Drag-and-drop Excel upload from browser with auto-detection
 - **Flexible Targets**: Weekly pacing, weighted scoring, configurable thresholds
 - **AI Coaching**: OpenRouter-powered insights and help (server-side only)
 - **RBAC**: Admin (full access) and Team Leader (team-scoped) roles
@@ -131,6 +132,81 @@ Hackathon_CM/
    ```
 
 See **[docs/Deployment.md](docs/Deployment.md)** for detailed steps and troubleshooting.
+
+## Production Uploads
+
+### Web Upload (Primary Method - Production)
+
+The recommended way to upload data in production is through the Admin Ingestion UI:
+
+1. **Access the Upload Page**
+   - Login as Admin: `https://your-app.up.railway.app/admin/ingestion`
+   - Or navigate: Dashboard → Admin → Ingestion
+
+2. **Upload Files**
+   - Drag & drop or click to select Excel files
+   - Any subset of 5 sources (all optional):
+     - **Class Consumption (CC/SC%)**: `cc_file`
+     - **Fixed Rate**: `fixed_file`
+     - **Referral Funnel**: `re_file`
+     - **Upgrade Rate**: `up_file`
+     - **All Leads & Recovery**: `all_leads_file`
+   - Max file size: **200MB** per file
+   - Allowed formats: `.xlsx`, `.xls`
+
+3. **Process**
+   - Click "Upload & Process"
+   - Files are auto-detected by headers
+   - Data is merged, validated, and persisted
+   - View detailed ingestion report
+
+4. **Verify**
+   - Click "View Overview" or "View Mentors" to see updated data
+   - Targets, pacing, and weighted scores are applied automatically
+
+### API Upload (Programmatic)
+
+Upload files via API from scripts or CI/CD:
+
+```bash
+# Example: Upload multiple sources
+curl -X POST "https://your-app.up.railway.app/api/ingest/uploads" \
+  -H "Cookie: token=<your-jwt-token>" \
+  -F "cc_file=@./CCtest.xlsx" \
+  -F "re_file=@./1410Leads.xlsx" \
+  -F "up_file=@./UpgradeRate.xlsx" \
+  -F "fixed_file=@./FixedTest.xlsx" \
+  -F "all_leads_file=@./AllLeads.xlsx"
+
+# Response: IngestionReport JSON with totals, coverage, errors
+```
+
+**Notes**:
+- Requires authentication (JWT cookie)
+- Files processed in-memory (no temp files)
+- Auto-detects source type from headers
+- Returns detailed report with per-source breakdown
+
+### Local Development (Folder Mode)
+
+For local testing, you can also use folder-based ingestion:
+
+```bash
+# 1. Place Excel files in folder
+./Excel Sheets of What We Will Upload/
+  ├── CCtest.xlsx
+  ├── FTtest.xlsx
+  ├── UpgradeRate.xlsx
+  └── ... (any Excel files)
+
+# 2. Run CLI ingestion
+npm run ingest:folder
+
+# 3. View JSON report
+./ingestion-reports/ingestion-<timestamp>.json
+```
+
+**Folder mode is for local dev only** - not available in production/Railway deployments.
 
 ## Available Scripts
 

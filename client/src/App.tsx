@@ -8,6 +8,7 @@ import MentorDetail from './pages/MentorDetail';
 import TargetsTracker from './pages/TargetsTracker';
 import MeetingAlerts from './pages/MeetingAlerts';
 import Upload from './pages/Upload';
+import AdminIngestion from './pages/AdminIngestion';
 import './index.css';
 
 function App() {
@@ -72,6 +73,14 @@ function App() {
             element={
               <ProtectedRoute requireSuperAdmin>
                 <Upload />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/ingestion"
+            element={
+              <ProtectedRoute>
+                <AdminIngestion />
               </ProtectedRoute>
             }
           />
