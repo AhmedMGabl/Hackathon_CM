@@ -1,0 +1,5 @@
+ALTER TABLE "MentorStats"
+ADD CONSTRAINT "MentorStats_mentorId_fkey"
+FOREIGN KEY ("mentorId") REFERENCES "Mentor"("id")
+ON DELETE CASCADE
+ON UPDATE CASCADE;

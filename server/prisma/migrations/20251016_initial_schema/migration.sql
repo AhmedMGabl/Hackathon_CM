@@ -28,7 +28,6 @@ CREATE TABLE "User" (
     "lastName" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'LEADER',
     "teamId" TEXT,
-    "calendlyUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -51,7 +50,6 @@ CREATE TABLE "Mentor" (
     "id" TEXT NOT NULL,
     "mentorId" TEXT NOT NULL,
     "mentorName" TEXT NOT NULL,
-    "email" TEXT,
     "teamId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -279,8 +277,6 @@ CREATE TABLE "Meeting" (
     "scoreThreshold" DOUBLE PRECISION,
     "notes" TEXT,
     "aiInsights" JSONB,
-    "emailsSent" BOOLEAN NOT NULL DEFAULT false,
-    "emailsSentAt" TIMESTAMP(3),
     "createdBy" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -294,10 +290,6 @@ CREATE TABLE "MeetingAttendee" (
     "meetingId" TEXT NOT NULL,
     "mentorId" TEXT NOT NULL,
     "attended" BOOLEAN NOT NULL DEFAULT false,
-    "emailSent" BOOLEAN NOT NULL DEFAULT false,
-    "emailSentAt" TIMESTAMP(3),
-    "emailReplied" BOOLEAN NOT NULL DEFAULT false,
-    "emailRepliedAt" TIMESTAMP(3),
     "aiPrepNotes" JSONB,
     "manualNotes" TEXT,
     "actionItems" TEXT[],
@@ -338,7 +330,6 @@ CREATE INDEX "Mentor_mentorName_idx" ON "Mentor"("mentorName");
 CREATE INDEX "Mentor_teamId_mentorId_idx" ON "Mentor"("teamId", "mentorId");
 
 -- CreateIndex
-CREATE INDEX "Mentor_email_idx" ON "Mentor"("email");
 
 -- CreateIndex
 CREATE INDEX "MetricDaily_mentorId_periodDate_idx" ON "MetricDaily"("mentorId", "periodDate");
@@ -437,8 +428,6 @@ CREATE INDEX "Meeting_status_scheduledDate_idx" ON "Meeting"("status", "schedule
 CREATE INDEX "Meeting_createdAt_idx" ON "Meeting"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Meeting_emailsSent_idx" ON "Meeting"("emailsSent");
-
 -- CreateIndex
 CREATE INDEX "MeetingAttendee_meetingId_idx" ON "MeetingAttendee"("meetingId");
 
@@ -446,8 +435,6 @@ CREATE INDEX "MeetingAttendee_meetingId_idx" ON "MeetingAttendee"("meetingId");
 CREATE INDEX "MeetingAttendee_mentorId_idx" ON "MeetingAttendee"("mentorId");
 
 -- CreateIndex
-CREATE INDEX "MeetingAttendee_emailSent_emailReplied_idx" ON "MeetingAttendee"("emailSent", "emailReplied");
-
 -- CreateIndex
 CREATE UNIQUE INDEX "MeetingAttendee_meetingId_mentorId_key" ON "MeetingAttendee"("meetingId", "mentorId");
 
