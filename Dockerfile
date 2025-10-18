@@ -41,8 +41,8 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Install OpenSSL for Prisma and Postgres client for schema resets
-RUN apt-get update -y && apt-get install -y openssl postgresql-client && rm -rf /var/lib/apt/lists/*
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy root package.json (defines workspaces)
 COPY package.json ./
@@ -52,8 +52,7 @@ COPY server/package*.json ./server/
 COPY server/prisma ./server/prisma
 
 # Install production dependencies only (this will trigger prisma generate)
-RUN npm install --workspace=server --omit=dev \
-  && npm install -g prisma@5.20.0
+RUN npm install --workspace=server --omit=dev
 
 # Copy built server
 COPY --from=server-builder /app/server/dist ./server/dist
@@ -75,9 +74,8 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/healthz', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
-# Start server. Reset schema, run migrations, seed, then start API.
+# Start server: apply migrations, seed data, then launch API.
 CMD ["sh", "-c", "cd server \
-  && (psql \"$DATABASE_URL\" -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\" || true) \
-  && prisma migrate deploy --accept-data-loss \
+  && npx prisma migrate deploy \
   && npm run seed \
   && node dist/index.js"]
