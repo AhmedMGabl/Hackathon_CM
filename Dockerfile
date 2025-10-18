@@ -41,8 +41,8 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Install OpenSSL for Prisma
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Install OpenSSL for Prisma and Postgres client for schema resets
+RUN apt-get update -y && apt-get install -y openssl postgresql-client && rm -rf /var/lib/apt/lists/*
 
 # Copy root package.json (defines workspaces)
 COPY package.json ./
@@ -75,9 +75,9 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/healthz', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
-# Start server. Try to heal failed migrations; if deployment still fails, reset DB once.
+# Start server. Reset schema, run migrations, seed, then start API.
 CMD ["sh", "-c", "cd server \
-  && (prisma migrate resolve --rolled-back 20251017_add_mentorstats_relation >/dev/null 2>&1 || true) \
-  && (prisma migrate resolve --rolled-back 20251018_add_email_calendly_fields >/dev/null 2>&1 || true) \
-  && (prisma migrate deploy || (prisma migrate reset --force --skip-seed && prisma migrate deploy)) \
+  && (psql \"$DATABASE_URL\" -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\" || true) \
+  && prisma migrate deploy --accept-data-loss \
+  && npm run seed \
   && node dist/index.js"]
