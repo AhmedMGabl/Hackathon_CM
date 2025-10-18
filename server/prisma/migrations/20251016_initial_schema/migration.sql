@@ -448,7 +448,7 @@ ALTER TABLE "Mentor" ADD CONSTRAINT "Mentor_teamId_fkey" FOREIGN KEY ("teamId") 
 ALTER TABLE "MetricDaily" ADD CONSTRAINT "MetricDaily_mentorId_fkey" FOREIGN KEY ("mentorId") REFERENCES "Mentor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "MentorStats" ADD CONSTRAINT "MentorStats_mentorId_fkey" FOREIGN KEY ("mentorId") REFERENCES "Mentor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- Foreign key for MentorStats is added in later migration.
 
 -- AddForeignKey
 ALTER TABLE "Config" ADD CONSTRAINT "Config_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE CASCADE ON UPDATE CASCADE;

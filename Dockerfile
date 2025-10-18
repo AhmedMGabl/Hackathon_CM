@@ -76,6 +76,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start server: reset schema, apply migrations (implicit), seed data, then launch API.
 CMD ["sh", "-c", "cd server \
-  && npx prisma migrate reset --force --skip-seed \
+  && npx prisma migrate deploy \
   && npm run seed \
   && node dist/index.js"]
