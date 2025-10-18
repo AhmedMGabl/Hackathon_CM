@@ -15,7 +15,8 @@
       "Bash(test:*)",
       "Bash(npm run test:*)",
       "Bash(npx tsc:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

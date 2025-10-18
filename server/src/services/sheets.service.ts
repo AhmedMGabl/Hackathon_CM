@@ -35,29 +35,60 @@ class SheetsService {
    * @returns Raw data as 2D array
    */
   async fetchSheet(spreadsheetId: string, range: string): Promise<any[][]> {
-    // TODO PASS 3: Implement Google Sheets fetch
     if (!this.sheets) {
-      throw new BadRequestError('Google Sheets API not configured');
+      throw new BadRequestError('Google Sheets API not configured. Please set SHEETS_API_KEY or SHEETS_SERVICE_ACCOUNT_JSON in your environment.');
     }
 
     logger.info('Fetching Google Sheet', { spreadsheetId, range });
 
-    // Stub implementation
-    // const response = await this.sheets.spreadsheets.values.get({
-    //   spreadsheetId,
-    //   range,
-    // });
-    // return response.data.values || [];
+    try {
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range,
+      });
 
-    throw new Error('Google Sheets fetch not yet implemented');
+      const data = response.data.values || [];
+      logger.info('Google Sheet fetched successfully', {
+        spreadsheetId,
+        range,
+        rows: data.length
+      });
+
+      return data;
+    } catch (error: any) {
+      logger.error('Failed to fetch Google Sheet', {
+        error: error.message,
+        spreadsheetId,
+        range
+      });
+
+      if (error.code === 403) {
+        throw new BadRequestError('Access denied. Make sure the Google Sheet is shared with "Anyone with the link can view" or shared with the service account.');
+      } else if (error.code === 404) {
+        throw new BadRequestError('Spreadsheet not found. Check the spreadsheet ID.');
+      }
+
+      throw new BadRequestError(`Failed to fetch Google Sheet: ${error.message}`);
+    }
   }
 
   /**
    * Validate spreadsheet exists and is accessible
    */
   async validateSpreadsheet(spreadsheetId: string): Promise<boolean> {
-    // TODO PASS 3: Implement validation
-    return false;
+    if (!this.sheets) {
+      return false;
+    }
+
+    try {
+      await this.sheets.spreadsheets.get({
+        spreadsheetId,
+      });
+      return true;
+    } catch (error) {
+      logger.error('Spreadsheet validation failed', { error, spreadsheetId });
+      return false;
+    }
   }
 }
 
