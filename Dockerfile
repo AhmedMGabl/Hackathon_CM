@@ -74,8 +74,8 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/healthz', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
-# Start server: apply migrations, seed data, then launch API.
+# Start server: reset schema, apply migrations (implicit), seed data, then launch API.
 CMD ["sh", "-c", "cd server \
-  && npx prisma migrate deploy \
+  && npx prisma migrate reset --force --skip-seed \
   && npm run seed \
   && node dist/index.js"]
