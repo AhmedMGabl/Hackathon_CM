@@ -70,7 +70,7 @@ export interface TransformResult {
 export function transformCCFile(
   workbook: XLSX.WorkBook,
   filename: string,
-  preset Mapping?: ColumnMapping
+  presetMapping?: ColumnMapping
 ): TransformResult {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rawData: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
@@ -574,7 +574,7 @@ export function autoTransform(
 ): TransformResult | null {
   // Detect source type from first sheet headers
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rawData: any[] = XLSX.utils.sheet_to_json(sheet, { limit: 1, defval: null });
+  const rawData: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
 
   if (rawData.length === 0) {
     return null;
