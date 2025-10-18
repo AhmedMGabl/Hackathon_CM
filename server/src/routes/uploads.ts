@@ -192,7 +192,7 @@ router.post(
       const uploadId = await createUploadRecord({
         source: 'web_upload',
         sourceDetail: Object.keys(files).join(', '),
-        createdBy: req.user?.userId,
+        createdBy: req.user?.id,
         status: 'SUCCESS',
         recordsProcessed: mergeResult.merged.length,
         recordsAccepted: valid.length,
@@ -226,7 +226,7 @@ router.post(
       await createUploadRecord({
         source: 'web_upload',
         sourceDetail: Object.keys(files).join(', '),
-        createdBy: req.user?.userId,
+        createdBy: req.user?.id,
         status: errors.length > 0 ? 'PARTIAL' : 'SUCCESS',
         recordsProcessed: mergeResult.merged.length,
         recordsAccepted: valid.length,
