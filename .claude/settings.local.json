@@ -16,7 +16,9 @@
       "Bash(npm run test:*)",
       "Bash(npx tsc:*)",
       "Bash(git restore:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker compose:*)"
     ],
     "deny": [],
     "ask": []

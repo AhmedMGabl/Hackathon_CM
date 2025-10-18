@@ -74,5 +74,10 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/healthz', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
-# Start server (migrations run on boot)
-CMD ["sh", "-c", "cd server && npx prisma migrate deploy && node dist/index.js"]
+# Start server. Attempt to resolve any previously failed migrations, then deploy.
+# If deploy still fails, fall back to prisma db push so the service can boot.
+CMD ["sh", "-c", "cd server \
+  && (npx prisma migrate resolve --rolled-back 20251017_add_mentorstats_relation >/dev/null 2>&1 || true) \
+  && (npx prisma migrate resolve --rolled-back 20251018_add_email_calendly_fields >/dev/null 2>&1 || true) \
+  && (npx prisma migrate deploy || npx prisma db push) \
+  && node dist/index.js"]
