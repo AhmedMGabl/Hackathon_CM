@@ -13,7 +13,9 @@
       "Bash(node analyze-detailed.js:*)",
       "Bash(npx prisma migrate dev:*)",
       "Bash(test:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
