@@ -88,11 +88,13 @@ model MetricDaily {
   referralLeads   Int?
   referralShowups Int?
   referralPaid    Int?
+  referralAchievementPct Float? // Computed or provided
 
   // Lead recovery
   totalLeads       Int?
   recoveredLeads   Int?
   unrecoveredLeads Int?
+  conversionPct    Float? // Computed: recovered/total * 100
   notes            String[] // Unrecovered notes
 
   // Ingestion metadata
@@ -372,4 +374,27 @@ enum Severity {
   INFO
   WARNING
   CRITICAL
+}
+
+// Column mapping presets for flexible header detection
+model UploadPreset {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g., "Middle East CC Format", "Standard Upgrade"
+  source      SourceType
+  columnMap   Json     // { "ccPct": "Class Consumption %", "upPct": "Cumulative Upgrade Rate", ... }
+  description String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([source, isDefault])
+}
+
+enum SourceType {
+  CC          // Class Consumption
+  FIXED       // Fixed Rate
+  RE          // Referral
+  UP          // Upgrade
+  ALL_LEADS   // All Leads
+  TEAMS       // Team assignments
 }

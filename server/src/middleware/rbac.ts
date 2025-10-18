@@ -33,6 +33,17 @@ export function requireRole(...roles: UserRole[]) {
 export const requireAdmin = requireRole('ADMIN');
 
 /**
+ * Super admin-only middleware
+ */
+export function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user || req.user.role !== 'SUPER_ADMIN') {
+    throw new ForbiddenError('Super admin privileges required');
+  }
+
+  next();
+}
+
+/**
  * Team scope validation middleware
  * Ensures leaders can only access their own team's data
  */

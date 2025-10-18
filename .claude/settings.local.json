@@ -12,7 +12,8 @@
       "Bash(node analyze-excel.js:*)",
       "Bash(node analyze-detailed.js:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(npm run test:*)"
     ],
     "deny": [],
     "ask": []

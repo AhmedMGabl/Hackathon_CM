@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import type { MentorStats as MentorStatsModel, Student as StudentModel } from '@prisma/client';
+import type { MentorStats as MentorStatsModel, Student as StudentModel, Mentor as MentorModel } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { DEFAULT_TARGETS } from '../config/constants.js';
 
 const router = Router();
 
@@ -13,6 +14,13 @@ const querySchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(100),
+});
+
+const underperformerQuerySchema = z.object({
+  teamId: z.string().optional(),
+  scoreThreshold: z.coerce.number().min(0).max(200).default(95),
+  maxTargetsHit: z.coerce.number().int().min(0).max(4).default(1),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
 function buildSummaryFromStat(stat?: MentorStatsModel | null) {
@@ -154,6 +162,67 @@ function buildStudentInsight(students: StudentModel[]) {
   };
 }
 
+function buildMentorListItem(
+  mentor: MentorModel & { team: { name: string } },
+  summary: ReturnType<typeof buildSummaryFromStat>,
+  stat?: MentorStatsModel | null
+) {
+  return {
+    id: mentor.id,
+    mentorId: mentor.mentorId,
+    mentorName: mentor.mentorName,
+    teamName: mentor.team.name,
+    teamId: mentor.teamId,
+    avgCcPct: summary.engagement.avgClassConsumption,
+    avgScPct: summary.engagement.superClassPct,
+    avgUpPct: summary.upgrade.upgradeRatePct,
+    avgFixedPct: summary.fixedRate.fixedRatePct,
+    weightedScore: summary.composite.weightedScore,
+    status: summary.composite.status,
+    targetsHit: summary.composite.targetsHit,
+    rank: stat?.rank ?? null,
+    totalStudents: summary.studentCounts.total,
+    totalLeads: summary.leads.totalLeads,
+    recoveredLeads: summary.leads.recoveredLeads,
+    unrecoveredLeads: summary.leads.unrecoveredLeads,
+    conversionRatePct: summary.leads.conversionRatePct,
+    referralLeads: summary.referral.referralLeads,
+    referralShowups: summary.referral.referralShowups,
+    referralPaid: summary.referral.referralPaid,
+  };
+}
+
+function buildUnderperformanceReasons(
+  summary: ReturnType<typeof buildSummaryFromStat>,
+  scoreThreshold: number,
+  targets = DEFAULT_TARGETS
+) {
+  const reasons: string[] = [];
+
+  if (summary.composite.weightedScore < scoreThreshold) {
+    reasons.push(`Weighted score ${summary.composite.weightedScore.toFixed(1)} below ${scoreThreshold}`);
+  }
+  if (summary.engagement.avgClassConsumption < targets.ccTarget) {
+    reasons.push(`Class consumption ${summary.engagement.avgClassConsumption.toFixed(1)}% below ${targets.ccTarget}% target`);
+  }
+  if (summary.engagement.superClassPct < targets.scTarget) {
+    reasons.push(`Super class ${summary.engagement.superClassPct.toFixed(1)}% below ${targets.scTarget}% target`);
+  }
+  if (summary.upgrade.upgradeRatePct < targets.upTarget) {
+    reasons.push(`Upgrade rate ${summary.upgrade.upgradeRatePct.toFixed(1)}% below ${targets.upTarget}% target`);
+  }
+  if (summary.fixedRate.fixedRatePct < targets.fixedTarget) {
+    reasons.push(`Fixed rate ${summary.fixedRate.fixedRatePct.toFixed(1)}% below ${targets.fixedTarget}% target`);
+  }
+  if (summary.leads.conversionRatePct < targets.conversionTarget) {
+    reasons.push(
+      `Lead conversion ${summary.leads.conversionRatePct.toFixed(1)}% below ${targets.conversionTarget}% target`
+    );
+  }
+
+  return reasons;
+}
+
 /**
  * GET /api/mentors
  * List mentors with their latest stats
@@ -229,30 +298,7 @@ router.get('/', authenticate, async (req, res, next) => {
     let mentorsWithStats = mentors.map((mentor) => {
       const stat = statsMap.get(mentor.id);
       const summary = buildSummaryFromStat(stat);
-
-      return {
-        id: mentor.id,
-        mentorId: mentor.mentorId,
-        mentorName: mentor.mentorName,
-        teamName: mentor.team.name,
-        teamId: mentor.teamId,
-        avgCcPct: summary.engagement.avgClassConsumption,
-        avgScPct: summary.engagement.superClassPct,
-        avgUpPct: summary.upgrade.upgradeRatePct,
-        avgFixedPct: summary.fixedRate.fixedRatePct,
-        weightedScore: summary.composite.weightedScore,
-        status: summary.composite.status,
-        targetsHit: summary.composite.targetsHit,
-        rank: stat?.rank ?? null,
-        totalStudents: summary.studentCounts.total,
-        totalLeads: summary.leads.totalLeads,
-        recoveredLeads: summary.leads.recoveredLeads,
-        unrecoveredLeads: summary.leads.unrecoveredLeads,
-        conversionRatePct: summary.leads.conversionRatePct,
-        referralLeads: summary.referral.referralLeads,
-        referralShowups: summary.referral.referralShowups,
-        referralPaid: summary.referral.referralPaid,
-      };
+      return buildMentorListItem(mentor, summary, stat);
     });
 
     // Filter by status if requested
@@ -274,6 +320,97 @@ router.get('/', authenticate, async (req, res, next) => {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/mentors/underperformers
+ * Surface mentors needing attention for meeting preparation
+ */
+router.get('/underperformers', authenticate, async (req, res, next) => {
+  try {
+    const parsed = underperformerQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid query parameters',
+          details: parsed.error.errors,
+        },
+      });
+    }
+
+    const { scoreThreshold, maxTargetsHit, limit, teamId } = parsed.data;
+
+    const latestStats = await prisma.mentorStats.findFirst({
+      orderBy: { periodDate: 'desc' },
+      select: { periodDate: true },
+    });
+
+    if (!latestStats) {
+      return res.json({
+        success: true,
+        data: {
+          periodDate: null,
+          mentors: [],
+          params: { scoreThreshold, maxTargetsHit, limit, teamId: teamId ?? null },
+        },
+      });
+    }
+
+    const whereClause: any = {
+      periodDate: latestStats.periodDate,
+      weightedScore: { lt: scoreThreshold },
+    };
+
+    if (maxTargetsHit < 4) {
+      whereClause.targetsHit = { lte: maxTargetsHit };
+    }
+
+    if (teamId) {
+      whereClause.mentor = { teamId };
+    } else if (req.user?.role === 'LEADER' && req.user.teamId) {
+      whereClause.mentor = { teamId: req.user.teamId };
+    }
+
+    const stats = await prisma.mentorStats.findMany({
+      where: whereClause,
+      include: {
+        mentor: {
+          include: { team: true },
+        },
+      },
+      orderBy: [{ weightedScore: 'asc' }],
+      take: limit,
+    });
+
+    const mentors = stats.map((stat) => {
+      const summary = buildSummaryFromStat(stat);
+      const overview = buildMentorListItem(stat.mentor, summary, stat);
+      const reasons = buildUnderperformanceReasons(summary, scoreThreshold, DEFAULT_TARGETS);
+
+      if (overview.targetsHit > maxTargetsHit) {
+        reasons.push(`Only ${overview.targetsHit} target(s) hit`);
+      }
+
+      return {
+        ...overview,
+        summary,
+        periodDate: stat.periodDate.toISOString(),
+        reasons,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        periodDate: latestStats.periodDate.toISOString(),
+        params: { scoreThreshold, maxTargetsHit, limit, teamId: teamId ?? null },
+        mentors,
       },
     });
   } catch (error) {

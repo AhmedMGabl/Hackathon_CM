@@ -16,7 +16,8 @@
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces",
     "migrate": "npm run migrate --workspace=server",
-    "seed": "npm run seed --workspace=server"
+    "seed": "npm run seed --workspace=server",
+    "ingest:folder": "npm run ingest:folder --workspace=server"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

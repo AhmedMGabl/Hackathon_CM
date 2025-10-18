@@ -7,8 +7,10 @@ import {
   getIngestionHistory,
   type ColumnMapping,
 } from '../services/ingestion.service.js';
+import { ingestFolder } from '../scripts/ingest-folder.js';
+import { getRecentUploads, getUploadById } from '../etl/persistence.js';
 import { authenticate } from '../middleware/auth.js';
-import { requireRole } from '../middleware/rbac.js';
+import { requireRole, requireSuperAdmin } from '../middleware/rbac.js';
 import { env } from '../config/env.js';
 
 const router = Router();
@@ -147,6 +149,71 @@ router.get('/history', authenticate, async (req, res, next) => {
       data: history,
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/ingest/folder
+ * Trigger folder-based ingestion from ./Excel Sheets of What We Will Upload/
+ * (SUPER_ADMIN only)
+ */
+router.post('/folder', authenticate, requireSuperAdmin, async (req, res, next) => {
+  try {
+    console.log('📁 Folder ingestion triggered by:', req.user?.email);
+
+    const report = await ingestFolder();
+
+    res.json({
+      success: true,
+      report
+    });
+  } catch (error) {
+    console.error('Folder ingestion error:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/ingest/reports
+ * Get recent folder ingestion reports
+ */
+router.get('/reports', authenticate, async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const uploads = await getRecentUploads(limit);
+
+    res.json({
+      success: true,
+      uploads
+    });
+  } catch (error) {
+    console.error('Failed to fetch reports:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/ingest/reports/:id
+ * Get specific ingestion report by ID
+ */
+router.get('/reports/:id', authenticate, async (req, res, next) => {
+  try {
+    const upload = await getUploadById(req.params.id);
+
+    if (!upload) {
+      return res.status(404).json({
+        success: false,
+        error: 'Report not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      upload
+    });
+  } catch (error) {
+    console.error('Failed to fetch report:', error);
     next(error);
   }
 });
