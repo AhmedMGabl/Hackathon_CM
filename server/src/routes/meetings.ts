@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
 import meetingPrepService from '../services/meeting-prep.service.js';
@@ -8,6 +8,20 @@ import logger from '../utils/logger.js';
 
 const router = Router();
 const prisma = new PrismaClient();
+const defaultMeetingInclude = {
+  attendees: {
+    include: {
+      mentor: {
+        select: {
+          id: true,
+          mentorId: true,
+          mentorName: true,
+          teamId: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.MeetingInclude;
 
 // Zod schemas
 const createMeetingSchema = z.object({
@@ -46,20 +60,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 
     const meetings = await prisma.meeting.findMany({
       where,
-      include: {
-        attendees: {
-          include: {
-            mentor: {
-              select: {
-                id: true,
-                mentorId: true,
-                mentorName: true,
-                teamId: true,
-              },
-            },
-          },
-        },
-      },
+      include: defaultMeetingInclude,
       orderBy: { createdAt: 'desc' },
       take: parseInt(limit as string),
       skip: parseInt(offset as string),
@@ -194,11 +195,11 @@ router.post('/', authenticate, requireRole('ADMIN', 'SUPER_ADMIN'), async (req: 
     const mentorPrepData = mentors.map(m => {
       const latestStat = m.stats[0];
       const metrics = {
-        ccPct: latestStat?.avgCcPct,
-        scPct: latestStat?.avgScPct,
-        upPct: latestStat?.avgUpPct,
-        fixedPct: latestStat?.avgFixedPct,
-        conversionPct: latestStat?.conversionPct,
+        ccPct: latestStat?.avgClassConsumption,
+        scPct: latestStat?.superClassPct,
+        upPct: latestStat?.upgradeRatePct,
+        fixedPct: latestStat?.fixedRatePct,
+        conversionPct: latestStat?.conversionRatePct,
         weightedScore: latestStat?.weightedScore,
       };
 
@@ -232,31 +233,21 @@ router.post('/', authenticate, requireRole('ADMIN', 'SUPER_ADMIN'), async (req: 
         notes: validatedData.notes,
         createdBy: req.user?.id,
         status: validatedData.scheduledDate ? 'SCHEDULED' : 'PENDING',
-        aiInsights: prepResults, // Store all prep results
+        aiInsights: prepResults as unknown as Prisma.InputJsonValue, // Store all prep results
         attendees: {
           create: mentors.map(m => {
             const prep = prepResults.find(p => p.mentorId === m.mentorId);
-            return {
-              mentorId: m.id,
-              aiPrepNotes: prep || null,
+            const attendeeData: Prisma.MeetingAttendeeCreateWithoutMeetingInput = {
+              mentor: { connect: { id: m.id } },
             };
+            if (prep) {
+              attendeeData.aiPrepNotes = prep as unknown as Prisma.InputJsonValue;
+            }
+            return attendeeData;
           }),
         },
       },
-      include: {
-        attendees: {
-          include: {
-            mentor: {
-              select: {
-                id: true,
-                mentorId: true,
-                mentorName: true,
-                teamId: true,
-              },
-            },
-          },
-        },
-      },
+      include: defaultMeetingInclude,
     });
 
     logger.info('Meeting created', { meetingId: meeting.id, attendeeCount: meeting.attendees.length });
@@ -311,19 +302,7 @@ router.patch('/:id', authenticate, requireRole('ADMIN', 'SUPER_ADMIN'), async (r
     const meeting = await prisma.meeting.update({
       where: { id },
       data: updateData,
-      include: {
-        attendees: {
-          include: {
-            mentor: {
-              select: {
-                id: true,
-                mentorId: true,
-                mentorName: true,
-              },
-            },
-          },
-        },
-      },
+      include: defaultMeetingInclude,
     });
 
     res.json({

@@ -218,7 +218,7 @@ Format your response EXACTLY like this:
       throw new Error(`OpenRouter API failed: ${response.status}`);
     }
 
-    const data: OpenRouterResponse = await response.json();
+    const data = (await response.json()) as OpenRouterResponse;
     return data.choices[0]?.message?.content || 'No response generated';
   }
 
