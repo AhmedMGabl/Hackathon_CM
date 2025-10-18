@@ -8,6 +8,7 @@ import configRoutes from './config.js';
 import mentorRoutes from './mentors.js';
 import alertRoutes from './alerts.js';
 import teamRoutes from './teams.js';
+import aiRoutes from './ai.js';
 
 const router = Router();
 
@@ -38,5 +39,8 @@ router.use('/api/teams', teamRoutes);
 
 // Alert endpoints (auth required, handled in route file)
 router.use('/api/alerts', alertRoutes);
+
+// AI endpoints (auth required)
+router.use('/api/ai', aiRoutes);
 
 export default router;

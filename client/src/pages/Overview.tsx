@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { mentorApi, configApi, alertApi } from '../lib/api';
 import { tokens } from '../config/tokens';
 import { BarChart, Bar, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import AICoachPanel from '../components/AICoachPanel';
+import AIHelpButton from '../components/AIHelpButton';
 
 export default function Overview() {
   const { user, logout } = useAuth();
@@ -183,6 +185,24 @@ export default function Overview() {
           </ResponsiveContainer>
         </div>
 
+        {/* AI Coach Panel */}
+        <div style={{ marginBottom: '32px' }}>
+          <AICoachPanel
+            metrics={{
+              ccPct: kpis.avgCC,
+              scPct: kpis.avgSC,
+              upPct: kpis.avgUP,
+              fixedPct: kpis.avgFixed,
+            }}
+            targets={{
+              ccTarget: config?.ccTarget || 80,
+              scTarget: config?.scTarget || 15,
+              upTarget: config?.upTarget || 25,
+              fixedTarget: config?.fixedTarget || 60,
+            }}
+          />
+        </div>
+
         {/* Navigation Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           <a href="/mentors" style={{ background: tokens.colors.surface.card, padding: '16px', borderRadius: tokens.radii.lg, textDecoration: 'none', color: tokens.colors.neutral[100], border: `1px solid ${tokens.colors.neutral[800]}`, transition: 'all 0.2s' }}>
@@ -205,6 +225,9 @@ export default function Overview() {
           )}
         </div>
       </main>
+
+      {/* AI Help Button (floating) */}
+      <AIHelpButton />
     </div>
   );
 }

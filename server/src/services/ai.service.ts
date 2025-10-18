@@ -6,6 +6,28 @@ import logger from '../utils/logger.js';
 // Simple in-memory cache for AI responses
 const responseCache = new Map<string, { response: AIResponse; timestamp: number }>();
 
+interface OpenRouterMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface OpenRouterResponse {
+  id: string;
+  model: string;
+  choices: Array<{
+    message: {
+      role: string;
+      content: string;
+    };
+    finish_reason: string;
+  }>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
 /**
  * OpenRouter AI service
  * Handles communication with OpenRouter API for coaching and help
@@ -26,26 +48,43 @@ class AIService {
    * Provides performance coaching based on metrics
    */
   async coach(request: AICoachRequest): Promise<AIResponse> {
-    // TODO PASS 5: Implement full coaching logic
-    // 1. Build system prompt with coaching context
-    // 2. Format metrics and targets
-    // 3. Check cache
-    // 4. Call OpenRouter
-    // 5. Parse and return response
+    if (!this.apiKey) {
+      logger.warn('AI coaching requested but OPENROUTER_API_KEY not configured');
+      return {
+        answer: 'AI coaching is not available. Please configure OPENROUTER_API_KEY.',
+        cached: false,
+      };
+    }
 
     const cacheKey = this.getCacheKey('coach', request);
     const cached = this.getFromCache(cacheKey);
     if (cached) {
+      logger.info('Returning cached AI coach response');
       return { ...cached, cached: true };
     }
 
     logger.info('AI coach request', { agentId: request.agentId, question: request.question });
 
-    // Stub response
-    return {
-      answer: 'AI coaching endpoint is not yet implemented. This will provide actionable insights based on your metrics and targets.',
-      cached: false,
-    };
+    try {
+      const systemPrompt = this.buildCoachSystemPrompt();
+      const userPrompt = this.buildCoachUserPrompt(request);
+
+      const answer = await this.callOpenRouter(systemPrompt, userPrompt);
+
+      const response: AIResponse = {
+        answer,
+        cached: false,
+      };
+
+      this.setCache(cacheKey, response);
+      return response;
+    } catch (error) {
+      logger.error('AI coach error', { error });
+      return {
+        answer: 'Unable to generate coaching insights at this time. Please try again later.',
+        cached: false,
+      };
+    }
   }
 
   /**
@@ -53,27 +92,44 @@ class AIService {
    * Answers questions based on documentation
    */
   async help(request: AIHelpRequest): Promise<AIResponse> {
-    // TODO PASS 5: Implement full help logic
-    // 1. Load relevant documentation
-    // 2. Build system prompt with doc snippets
-    // 3. Check cache
-    // 4. Call OpenRouter
-    // 5. Parse and return response with citations
+    if (!this.apiKey) {
+      logger.warn('AI help requested but OPENROUTER_API_KEY not configured');
+      return {
+        answer: 'AI help is not available. Please configure OPENROUTER_API_KEY.',
+        cached: false,
+      };
+    }
 
     const cacheKey = this.getCacheKey('help', request);
     const cached = this.getFromCache(cacheKey);
     if (cached) {
+      logger.info('Returning cached AI help response');
       return { ...cached, cached: true };
     }
 
     logger.info('AI help request', { question: request.question });
 
-    // Stub response
-    return {
-      answer: 'AI help endpoint is not yet implemented. This will answer questions based on documentation.',
-      citations: ['Docs › Overview', 'Docs › Ingestion'],
-      cached: false,
-    };
+    try {
+      const systemPrompt = this.buildHelpSystemPrompt();
+      const userPrompt = request.question;
+
+      const answer = await this.callOpenRouter(systemPrompt, userPrompt);
+
+      const response: AIResponse = {
+        answer,
+        citations: this.extractCitations(answer),
+        cached: false,
+      };
+
+      this.setCache(cacheKey, response);
+      return response;
+    } catch (error) {
+      logger.error('AI help error', { error });
+      return {
+        answer: 'Unable to answer your question at this time. Please try again later.',
+        cached: false,
+      };
+    }
   }
 
   /**
@@ -81,26 +137,135 @@ class AIService {
    * @private
    */
   private async callOpenRouter(systemPrompt: string, userPrompt: string): Promise<string> {
-    // TODO PASS 5: Implement OpenRouter API call
-    // const response = await fetch(`${this.baseUrl}/chat/completions`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${this.apiKey}`,
-    //     'HTTP-Referer': 'https://github.com/yourusername/hackathon-cm',
-    //   },
-    //   body: JSON.stringify({
-    //     model: this.model,
-    //     messages: [
-    //       { role: 'system', content: systemPrompt },
-    //       { role: 'user', content: userPrompt },
-    //     ],
-    //     max_tokens: AI_CONFIG.RESPONSE_MAX_TOKENS,
-    //     temperature: AI_CONFIG.TEMPERATURE,
-    //   }),
-    // });
+    const messages: OpenRouterMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ];
 
-    throw new Error('OpenRouter API not yet implemented');
+    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+        'HTTP-Referer': 'https://cmetrics.app',
+        'X-Title': 'CMetrics Performance Analytics',
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages,
+        max_tokens: AI_CONFIG.RESPONSE_MAX_TOKENS,
+        temperature: AI_CONFIG.TEMPERATURE,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('OpenRouter API error', { status: response.status, error: errorText });
+      throw new Error(`OpenRouter API failed: ${response.status}`);
+    }
+
+    const data: OpenRouterResponse = await response.json();
+    return data.choices[0]?.message?.content || 'No response generated';
+  }
+
+  /**
+   * Build system prompt for coaching
+   * @private
+   */
+  private buildCoachSystemPrompt(): string {
+    return `You are a performance coach for Course Mentors at an educational organization.
+Your role is to provide actionable, data-driven insights to help mentors improve their performance.
+
+Focus on:
+- Identifying strengths and areas for improvement
+- Providing 2-3 specific, actionable recommendations
+- Being encouraging but honest
+- Considering weekly pacing and targets
+- Noting which metrics are on/off track
+
+Keep responses concise (4-6 bullet points) and avoid generic advice.
+Use markdown formatting for readability.`;
+  }
+
+  /**
+   * Build user prompt for coaching
+   * @private
+   */
+  private buildCoachUserPrompt(request: AICoachRequest): string {
+    const { metrics, targets, question } = request;
+
+    let prompt = `Analyze performance metrics:\n\n`;
+
+    if (metrics) {
+      prompt += `**Current Metrics**:\n`;
+      if (metrics.ccPct !== undefined) prompt += `- Class Consumption: ${metrics.ccPct.toFixed(1)}%\n`;
+      if (metrics.scPct !== undefined) prompt += `- Super-Class: ${metrics.scPct.toFixed(1)}%\n`;
+      if (metrics.upPct !== undefined) prompt += `- Upgrade Rate: ${metrics.upPct.toFixed(1)}%\n`;
+      if (metrics.fixedPct !== undefined) prompt += `- Fixed Rate: ${metrics.fixedPct.toFixed(1)}%\n`;
+      if (metrics.conversionPct !== undefined) prompt += `- Lead Conversion: ${metrics.conversionPct.toFixed(1)}%\n`;
+      prompt += `\n`;
+    }
+
+    if (targets) {
+      prompt += `**Targets**:\n`;
+      if (targets.ccTarget !== undefined) prompt += `- CC Target: ${targets.ccTarget}%\n`;
+      if (targets.scTarget !== undefined) prompt += `- SC Target: ${targets.scTarget}%\n`;
+      if (targets.upTarget !== undefined) prompt += `- UP Target: ${targets.upTarget}%\n`;
+      if (targets.fixedTarget !== undefined) prompt += `- Fixed Target: ${targets.fixedTarget}%\n`;
+      prompt += `\n`;
+    }
+
+    if (question) {
+      prompt += `**Specific Question**: ${question}\n\n`;
+    }
+
+    prompt += `Provide:\n1. Performance summary\n2. Top strengths\n3. Improvement areas with specific actions\n4. Priority focus`;
+
+    return prompt;
+  }
+
+  /**
+   * Build system prompt for help
+   * @private
+   */
+  private buildHelpSystemPrompt(): string {
+    return `You are a helpful assistant for the CMetrics performance analytics platform.
+You help users understand:
+- Metric definitions (CC%, SC%, UP%, Fixed%, Referral Achievement, Conversion Rate)
+- Target setting and weekly pacing (Week 1÷4, Week 2÷3, Week 3÷2, Week 4=full)
+- Weighted scoring calculations
+- How to interpret dashboards and reports
+- Best practices for performance improvement
+
+Provide clear, concise answers with examples when helpful.
+Use markdown formatting for readability.
+If you don't know something specific to the system, say so.`;
+  }
+
+  /**
+   * Extract citations from AI response
+   * @private
+   */
+  private extractCitations(answer: string): string[] | undefined {
+    // Look for citation patterns like "Docs › Overview" or [Documentation: XYZ]
+    const citationPatterns = [
+      /Docs\s*›\s*([^,\n]+)/gi,
+      /\[Documentation:\s*([^\]]+)\]/gi,
+      /see\s+([A-Z][a-z]+\.md)/gi,
+    ];
+
+    const citations: Set<string> = new Set();
+
+    citationPatterns.forEach(pattern => {
+      const matches = answer.matchAll(pattern);
+      for (const match of matches) {
+        if (match[1]) {
+          citations.add(match[1].trim());
+        }
+      }
+    });
+
+    return citations.size > 0 ? Array.from(citations) : undefined;
   }
 
   /**
@@ -134,6 +299,13 @@ class AIService {
    */
   private setCache(key: string, response: AIResponse): void {
     responseCache.set(key, { response, timestamp: Date.now() });
+  }
+
+  /**
+   * Check if AI is enabled
+   */
+  isEnabled(): boolean {
+    return !!this.apiKey;
   }
 }
 

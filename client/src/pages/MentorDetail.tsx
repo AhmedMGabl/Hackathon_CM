@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { mentorApi } from '../lib/api';
+import { mentorApi, configApi } from '../lib/api';
 import { tokens, getStatusColor } from '../config/tokens';
 import {
   ResponsiveContainer,
@@ -14,6 +14,8 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
+import AICoachPanel from '../components/AICoachPanel';
+import AIHelpButton from '../components/AIHelpButton';
 
 interface MentorSummary {
   studentCounts: { total: number; active: number };
@@ -211,6 +213,7 @@ export default function MentorDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<MentorDetailResponse | null>(null);
+  const [config, setConfig] = useState<any>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -221,9 +224,13 @@ export default function MentorDetail() {
       setError(null);
 
       try {
-        const response = await mentorApi.getById(id);
+        const [mentorResponse, configResponse] = await Promise.all([
+          mentorApi.getById(id),
+          configApi.get(),
+        ]);
         if (!cancelled) {
-          setData(response.data);
+          setData(mentorResponse.data);
+          setConfig(configResponse.data);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -497,7 +504,30 @@ export default function MentorDetail() {
           <StudentsTable title="Top Performers" students={studentInsights.topPerformers} />
           <StudentsTable title="Needs Attention" students={studentInsights.needsAttention} />
         </section>
+
+        {/* AI Coach Panel for Mentor */}
+        <section style={{ marginTop: '32px' }}>
+          <AICoachPanel
+            agentId={mentor.mentorId}
+            metrics={{
+              ccPct: summary.engagement.avgClassConsumption,
+              scPct: summary.engagement.superClassPct,
+              upPct: summary.upgrade.upgradeRatePct,
+              fixedPct: summary.fixedRate.fixedRatePct,
+              conversionPct: summary.leads.conversionRatePct,
+            }}
+            targets={{
+              ccTarget: config?.ccTarget || 80,
+              scTarget: config?.scTarget || 15,
+              upTarget: config?.upTarget || 25,
+              fixedTarget: config?.fixedTarget || 60,
+            }}
+          />
+        </section>
       </main>
+
+      {/* AI Help Button (floating) */}
+      <AIHelpButton />
     </div>
   );
 }

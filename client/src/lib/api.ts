@@ -152,7 +152,24 @@ export const ingestionApi = {
 
 // AI API
 export const aiApi = {
-  coach: (payload: { question: string; context?: any }) =>
+  coach: (payload: {
+    agentId?: string;
+    teamId?: string;
+    question?: string;
+    metrics?: {
+      ccPct?: number;
+      scPct?: number;
+      upPct?: number;
+      fixedPct?: number;
+      conversionPct?: number;
+    };
+    targets?: {
+      ccTarget?: number;
+      scTarget?: number;
+      upTarget?: number;
+      fixedTarget?: number;
+    };
+  }) =>
     fetchApi<any>('/api/ai/coach', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -163,6 +180,8 @@ export const aiApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  status: () => fetchApi<any>('/api/ai/status'),
 };
 
 // Team API
