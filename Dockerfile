@@ -52,7 +52,8 @@ COPY server/package*.json ./server/
 COPY server/prisma ./server/prisma
 
 # Install production dependencies only (this will trigger prisma generate)
-RUN npm install --workspace=server --omit=dev
+RUN npm install --workspace=server --omit=dev \
+  && npm install -g prisma@5.20.0
 
 # Copy built server
 COPY --from=server-builder /app/server/dist ./server/dist
@@ -77,7 +78,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Start server. Attempt to resolve any previously failed migrations, then deploy.
 # If deploy still fails, fall back to prisma db push so the service can boot.
 CMD ["sh", "-c", "cd server \
-  && (npx prisma migrate resolve --rolled-back 20251017_add_mentorstats_relation >/dev/null 2>&1 || true) \
-  && (npx prisma migrate resolve --rolled-back 20251018_add_email_calendly_fields >/dev/null 2>&1 || true) \
-  && (npx prisma migrate deploy || npx prisma db push) \
+  && (prisma migrate resolve --rolled-back 20251017_add_mentorstats_relation >/dev/null 2>&1 || true) \
+  && (prisma migrate resolve --rolled-back 20251018_add_email_calendly_fields >/dev/null 2>&1 || true) \
+  && (prisma migrate deploy || prisma db push) \
   && node dist/index.js"]
