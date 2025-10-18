@@ -145,7 +145,7 @@ router.get('/me', authenticate, async (req, res, next) => {
 
     res.json({
       success: true,
-      user: {
+      data: {
         id: user.id,
         email: user.email,
         firstName: user.firstName,
@@ -153,6 +153,60 @@ router.get('/me', authenticate, async (req, res, next) => {
         role: user.role,
         teamId: user.teamId,
         teamName: user.team?.name,
+        calendlyUrl: user.calendlyUrl,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PATCH /api/auth/profile
+ * Update current user's profile (calendlyUrl)
+ */
+router.patch('/profile', authenticate, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Not authenticated',
+        },
+      });
+    }
+
+    const { calendlyUrl } = req.body;
+
+    // Validate Calendly URL format if provided
+    if (calendlyUrl && calendlyUrl.trim() && !calendlyUrl.includes('calendly.com')) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid Calendly URL. Must be a calendly.com link.',
+        },
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        calendlyUrl: calendlyUrl?.trim() || null,
+      },
+      include: { team: true },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        role: updatedUser.role,
+        teamId: updatedUser.teamId,
+        teamName: updatedUser.team?.name,
+        calendlyUrl: updatedUser.calendlyUrl,
       },
     });
   } catch (error) {

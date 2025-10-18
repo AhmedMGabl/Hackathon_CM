@@ -21,7 +21,10 @@ export default function MeetingAlerts() {
   const [scheduledDate, setScheduledDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [sendingEmails, setSendingEmails] = useState(false);
+  const [createdMeetingId, setCreatedMeetingId] = useState<string | null>(null);
   const [prepResults, setPrepResults] = useState<MeetingPrep[] | null>(null);
+  const [emailResults, setEmailResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -94,9 +97,10 @@ export default function MeetingAlerts() {
       const result = await response.json();
 
       if (result.success && result.data) {
-        // Extract AI prep results
+        // Extract AI prep results and save meeting ID
         const preps = result.data.aiInsights || [];
         setPrepResults(preps);
+        setCreatedMeetingId(result.data.id);
       } else {
         setError(result.error?.message || 'Failed to create meeting');
       }
@@ -156,6 +160,36 @@ export default function MeetingAlerts() {
     URL.revokeObjectURL(url);
   };
 
+  const handleSendEmails = async () => {
+    if (!createdMeetingId) {
+      setError('No meeting ID found');
+      return;
+    }
+
+    setSendingEmails(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/meetings/${createdMeetingId}/send-invites`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        setEmailResults(result.data);
+      } else {
+        setError(result.error?.message || 'Failed to send emails');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send emails');
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 p-6">
@@ -204,16 +238,23 @@ export default function MeetingAlerts() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Score Threshold (%)</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Score Threshold: <span className="text-blue-400 font-bold">{scoreThreshold}%</span>
+                  </label>
                   <input
-                    type="number"
+                    type="range"
                     value={scoreThreshold}
                     onChange={(e) => setScoreThreshold(parseInt(e.target.value))}
                     min="0"
                     max="100"
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    step="5"
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                   />
-                  <p className="text-xs text-slate-500 mt-1">Show mentors below this score</p>
+                  <div className="flex justify-between text-xs text-slate-500 mt-1">
+                    <span>0%</span>
+                    <span>Show mentors below this score</span>
+                    <span>100%</span>
+                  </div>
                 </div>
 
                 <div>
@@ -316,6 +357,30 @@ export default function MeetingAlerts() {
                 <p className="text-slate-400">Meeting prep for {prepResults.length} mentors</p>
               </div>
               <div className="flex gap-3">
+                {!emailResults && (
+                  <button
+                    onClick={handleSendEmails}
+                    disabled={sendingEmails}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {sendingEmails ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Sending Emails...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Send Email Invites
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={exportToText}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -323,13 +388,65 @@ export default function MeetingAlerts() {
                   Export as Text
                 </button>
                 <button
-                  onClick={() => setPrepResults(null)}
+                  onClick={() => {
+                    setPrepResults(null);
+                    setEmailResults(null);
+                    setCreatedMeetingId(null);
+                  }}
                   className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600"
                 >
                   Create Another
                 </button>
               </div>
             </div>
+
+            {/* Email Results */}
+            {emailResults && (
+              <div className="bg-green-900/20 border border-green-700 rounded-lg p-6 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-green-400">Email Invites Sent!</h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="bg-slate-800 rounded p-3">
+                    <div className="text-2xl font-bold text-slate-100">{emailResults.sent}</div>
+                    <div className="text-sm text-slate-400">Sent Successfully</div>
+                  </div>
+                  <div className="bg-slate-800 rounded p-3">
+                    <div className="text-2xl font-bold text-slate-100">{emailResults.failed}</div>
+                    <div className="text-sm text-slate-400">Failed</div>
+                  </div>
+                  <div className="bg-slate-800 rounded p-3">
+                    <div className="text-2xl font-bold text-slate-100">{emailResults.total}</div>
+                    <div className="text-sm text-slate-400">Total</div>
+                  </div>
+                </div>
+                {emailResults.results && emailResults.results.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-300">Email Status:</p>
+                    {emailResults.results.map((result: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm">
+                        {result.success ? (
+                          <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                        <span className={result.success ? 'text-green-400' : 'text-red-400'}>
+                          {result.mentorName}
+                        </span>
+                        {result.error && <span className="text-slate-500">({result.error})</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {prepResults.map((prep, idx) => (
               <div key={prep.mentorId} className="bg-slate-800 rounded-lg p-6 mb-6">

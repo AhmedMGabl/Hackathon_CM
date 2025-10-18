@@ -9,6 +9,7 @@ import TargetsTracker from './pages/TargetsTracker';
 import MeetingAlerts from './pages/MeetingAlerts';
 import Upload from './pages/Upload';
 import AdminIngestion from './pages/AdminIngestion';
+import Profile from './pages/Profile';
 import './index.css';
 
 function App() {
@@ -81,6 +82,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminIngestion />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />
