@@ -68,6 +68,21 @@ export interface PacingConfig {
 
 export type StatusType = 'ABOVE' | 'WARNING' | 'BELOW';
 
+export interface AICoachMetrics {
+  ccPct?: number;
+  scPct?: number;
+  upPct?: number;
+  fixedPct?: number;
+  conversionPct?: number;
+}
+
+export interface AICoachTargets {
+  ccTarget?: number;
+  scTarget?: number;
+  upTarget?: number;
+  fixedTarget?: number;
+}
+
 export interface JWTPayload {
   id: string;
   email: string;
@@ -78,8 +93,9 @@ export interface JWTPayload {
 export interface AICoachRequest {
   agentId?: string;
   teamId?: string;
-  question: string;
-  metrics?: Record<string, any>;
+  question?: string;
+  metrics?: AICoachMetrics;
+  targets?: AICoachTargets;
   targetConfig?: TargetConfig;
 }
 

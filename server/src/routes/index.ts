@@ -9,6 +9,7 @@ import mentorRoutes from './mentors.js';
 import alertRoutes from './alerts.js';
 import teamRoutes from './teams.js';
 import aiRoutes from './ai.js';
+import meetingRoutes from './meetings.js';
 
 const router = Router();
 
@@ -42,5 +43,8 @@ router.use('/api/alerts', alertRoutes);
 
 // AI endpoints (auth required)
 router.use('/api/ai', aiRoutes);
+
+// Meeting endpoints (auth required, admin/super_admin only)
+router.use('/api/meetings', meetingRoutes);
 
 export default router;

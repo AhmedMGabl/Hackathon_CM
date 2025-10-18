@@ -60,8 +60,9 @@ model Mentor {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  metrics MetricDaily[]
-  stats   MentorStats[]
+  metrics  MetricDaily[]
+  stats    MentorStats[]
+  meetings MeetingAttendee[]
 
   @@index([mentorId])
   @@index([teamId])
@@ -398,3 +399,48 @@ enum SourceType {
   ALL_LEADS   // All Leads
   TEAMS       // Team assignments
 }
+
+// Meeting Prep for underperformers
+model Meeting {
+  id              String   @id @default(cuid())
+  title           String
+  scheduledDate   DateTime?
+  status          MeetingStatus @default(PENDING)
+  scoreThreshold  Float?          // e.g., 60 = only mentors below 60% weighted score
+  notes           String?
+  aiInsights      Json?           // AI-generated insights per mentor
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  attendees       MeetingAttendee[]
+
+  @@index([status, scheduledDate])
+  @@index([createdAt])
+}
+
+enum MeetingStatus {
+  PENDING       // Not scheduled yet
+  SCHEDULED     // Date set
+  COMPLETED     // Meeting happened
+  CANCELLED     // Cancelled
+}
+
+model MeetingAttendee {
+  id              String   @id @default(cuid())
+  meetingId       String
+  meeting         Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  mentorId        String
+  mentor          Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  attended        Boolean  @default(false)
+  aiPrepNotes     Json?    // AI-generated prep notes for this specific mentor
+  manualNotes     String?  // Manual notes added by leader
+  actionItems     String[] // Follow-up action items
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([meetingId, mentorId])
+  @@index([meetingId])
+  @@index([mentorId])
+}
+
