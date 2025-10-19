@@ -1,10 +1,9 @@
-import { PrismaClient } from '@prisma/client';
 import app from './app.js';
 import { env } from './config/env.js';
 import logger from './utils/logger.js';
+import { prisma } from './lib/prisma.js';
 
 // CMetrics Server - Railway Deployment
-const prisma = new PrismaClient();
 
 // Graceful shutdown handler
 function gracefulShutdown(signal: string) {

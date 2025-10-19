@@ -6,9 +6,9 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 import { env } from '../config/env.js';
 import { authenticate } from '../middleware/auth.js';
+import { prisma } from '../lib/prisma.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Zod schemas
 const loginSchema = z.object({
