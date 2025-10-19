@@ -3,7 +3,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "sh -c 'cd server && npx prisma migrate deploy && npx prisma generate && node dist/index.js'"
+startCommand = "sh -c 'cd server && npx prisma migrate deploy && npx prisma generate && npm run seed && node dist/index.js'"
 healthcheckPath = "/healthz"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
