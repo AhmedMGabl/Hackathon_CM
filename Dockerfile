@@ -74,8 +74,5 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/healthz', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
-# Start server: reset schema, apply migrations (implicit), seed data, then launch API.
-CMD ["sh", "-c", "cd server \
-  && npx prisma migrate deploy \
-  && npm run seed \
-  && node dist/index.js"]
+# Default command (Railway will override this with its own startCommand)
+CMD ["node", "server/dist/index.js"]
