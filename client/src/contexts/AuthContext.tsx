@@ -10,6 +10,7 @@ interface User {
   role: UserRole;
   teamId: string | null;
   teamName?: string;
+  calendlyUrl?: string | null;
 }
 
 interface AuthContextType {
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
+    setLoading(true);
     try {
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
@@ -42,7 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user);
+        const userData = data.data ?? data.user ?? null;
+        setUser(userData);
       } else {
         setUser(null);
       }
@@ -68,7 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await response.json();
-    setUser(data.user);
+    const userData = data.user ?? data.data ?? null;
+    setUser(userData);
   };
 
   const logout = async () => {
