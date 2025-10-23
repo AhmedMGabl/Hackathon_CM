@@ -34,7 +34,24 @@ app.use(
 // CORS configuration
 app.use(
   cors({
-    origin: env.ALLOWED_ORIGINS,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      // In production on Railway, frontend and backend are same origin
+      // Allow all origins if ALLOWED_ORIGINS is '*'
+      if (env.ALLOWED_ORIGINS.includes('*')) {
+        return callback(null, true);
+      }
+
+      // Check if origin is in allowed list
+      if (env.ALLOWED_ORIGINS.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Reject origin
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true, // Allow cookies
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

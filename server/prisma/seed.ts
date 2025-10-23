@@ -19,17 +19,21 @@ const MENTOR_NAMES = [
 async function main() {
   console.log('🌱 Seeding CMetrics database...\n');
 
-  // Clear existing data in correct order
-  console.log('📦 Clearing existing data...');
-  await prisma.alert.deleteMany();
-  await prisma.alertRule.deleteMany();
-  await prisma.upload.deleteMany();
-  await prisma.metricDaily.deleteMany();
-  await prisma.mentor.deleteMany();
-  await prisma.config.deleteMany();
-  await prisma.target.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.team.deleteMany();
+  // Check if database is already seeded
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: 'admin@cmetrics.app' },
+  });
+
+  if (existingAdmin) {
+    console.log('✅ Database already seeded (admin user exists). Skipping seed.');
+    console.log('\n🔑 Login Credentials:');
+    console.log('   Super Admin:  admin@cmetrics.app / Admin123!');
+    console.log('   Kiran:  kiran@cmetrics.app / Leader123! (Team Alpha)');
+    console.log('   Aisha:  aisha@cmetrics.app / Leader123! (Team Beta)\n');
+    return;
+  }
+
+  console.log('📦 Starting fresh seed...');
 
   // Create teams
   console.log('👥 Creating teams...');
