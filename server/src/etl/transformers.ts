@@ -161,6 +161,9 @@ export function transformCCFile(
 
 /**
  * Transform Fixed Rate file
+ * Supports two formats:
+ * 1. Aggregated: fixedStudents + totalStudents columns
+ * 2. Student-level: "Fixed or Not" boolean column (1=fixed, 0=not fixed)
  */
 export function transformFixedFile(
   workbook: XLSX.WorkBook,
@@ -190,6 +193,10 @@ export function transformFixedFile(
   result.columnsDetected = detected;
   result.columnsMapped = mapping;
 
+  // Detect format: student-level (fixedOrNot) vs aggregated (fixedStudents/totalStudents)
+  const hasFixedOrNot = mapping['fixedOrNot'] !== undefined;
+  const hasAggregated = mapping['fixedStudents'] !== undefined || mapping['totalStudents'] !== undefined;
+
   // Group by mentor and aggregate
   const mentorMap: Map<string, { fixed: number; total: number; team?: string; date?: Date }> = new Map();
 
@@ -201,16 +208,26 @@ export function transformFixedFile(
     const teamName = normalizeTeamName(getMappedValue(row, 'teamName', mapping));
     const periodDate = parseDate(getMappedValue(row, 'periodDate', mapping));
 
-    const fixedStudents = cleanIntValue(getMappedValue(row, 'fixedStudents', mapping)) || 0;
-    const totalStudents = cleanIntValue(getMappedValue(row, 'totalStudents', mapping)) || 0;
-
     if (!mentorMap.has(mentorName)) {
       mentorMap.set(mentorName, { fixed: 0, total: 0, team: teamName, date: periodDate || undefined });
     }
 
     const data = mentorMap.get(mentorName)!;
-    data.fixed += fixedStudents;
-    data.total += totalStudents;
+
+    if (hasFixedOrNot) {
+      // Student-level format: each row is a student, count "Fixed or Not" values
+      const fixedOrNot = cleanIntValue(getMappedValue(row, 'fixedOrNot', mapping));
+      data.total += 1; // Each row = 1 student
+      if (fixedOrNot === 1) {
+        data.fixed += 1;
+      }
+    } else if (hasAggregated) {
+      // Aggregated format: fixedStudents and totalStudents columns
+      const fixedStudents = cleanIntValue(getMappedValue(row, 'fixedStudents', mapping)) || 0;
+      const totalStudents = cleanIntValue(getMappedValue(row, 'totalStudents', mapping)) || 0;
+      data.fixed += fixedStudents;
+      data.total += totalStudents;
+    }
   });
 
   // Convert to transformed rows
@@ -566,15 +583,47 @@ export function transformTeamsFile(
 
 /**
  * Auto-transform based on detected source type
+ * Handles Excel files with title rows (skips rows with __EMPTY headers)
  */
 export function autoTransform(
   workbook: XLSX.WorkBook,
   filename: string,
   presetMapping?: ColumnMapping
 ): TransformResult | null {
-  // Detect source type from first sheet headers
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rawData: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
+
+  // First read as array of arrays to find header row
+  const arrayData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null }) as any[][];
+
+  if (arrayData.length === 0) {
+    return null;
+  }
+
+  // Find first row with actual column names (not title row)
+  let headerRowIndex = 0;
+  for (let i = 0; i < Math.min(10, arrayData.length); i++) {
+    const row = arrayData[i];
+    if (!row || row.length === 0) continue;
+
+    // Check if this looks like a header row (non-empty, text values)
+    const nonEmptyCount = row.filter(cell => cell !== null && cell !== undefined && cell !== '').length;
+    if (nonEmptyCount >= 2) {
+      // Convert entire row to header candidates (including null positions for proper mapping)
+      const headerCandidates = row.map(cell => cell !== null && cell !== undefined && cell !== '' ? String(cell) : '');
+
+      // Check if this could be a valid header row by trying to detect source type
+      const testSourceType = detectSourceType(headerCandidates);
+      if (testSourceType !== null) {
+        headerRowIndex = i;
+        break;
+      }
+    }
+  }
+
+  // Read data with correct header row
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+  range.s.r = headerRowIndex; // Start from header row
+  const rawData: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null, range });
 
   if (rawData.length === 0) {
     return null;
@@ -584,11 +633,46 @@ export function autoTransform(
   const sourceType = detectSourceType(headers);
 
   if (!sourceType) {
-    console.warn(`Unable to detect source type for file: ${filename}`);
+    console.warn(`Unable to detect source type for file: ${filename} (tried header row ${headerRowIndex})`);
     return null;
   }
 
-  console.log(`Detected source type: ${sourceType} for file: ${filename}`);
+  console.log(`Detected source type: ${sourceType} for file: ${filename} (header row: ${headerRowIndex + 1})`);
+
+  // If header is not on first row, create a modified workbook with adjusted range
+  if (headerRowIndex > 0) {
+    const originalSheet = sheet;
+    const adjustedSheet: XLSX.WorkSheet = {};
+
+    // Copy sheet properties
+    if (originalSheet['!ref']) {
+      const range = XLSX.utils.decode_range(originalSheet['!ref']);
+      range.s.r = headerRowIndex; // Start from header row
+      adjustedSheet['!ref'] = XLSX.utils.encode_range(range);
+    }
+
+    // Copy cells with adjusted row numbers
+    Object.keys(originalSheet).forEach(key => {
+      if (key.startsWith('!')) {
+        adjustedSheet[key] = originalSheet[key];
+      } else {
+        // Adjust cell references (e.g., A5 becomes A1 if headerRowIndex = 4)
+        const cellRef = XLSX.utils.decode_cell(key);
+        if (cellRef.r >= headerRowIndex) {
+          const newRef = XLSX.utils.encode_cell({ r: cellRef.r - headerRowIndex, c: cellRef.c });
+          adjustedSheet[newRef] = originalSheet[key];
+        }
+      }
+    });
+
+    // Create modified workbook
+    const modifiedWorkbook: XLSX.WorkBook = {
+      SheetNames: [workbook.SheetNames[0]],
+      Sheets: { [workbook.SheetNames[0]]: adjustedSheet }
+    };
+
+    workbook = modifiedWorkbook;
+  }
 
   switch (sourceType) {
     case 'CC':

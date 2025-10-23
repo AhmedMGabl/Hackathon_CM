@@ -1,0 +1,103 @@
+{
+  "timestamp": "2025-10-23T08:26:00.930Z",
+  "folder": "W:\\WS\\AhmedGabl\\Hackathon_CM\\Excel Sheets of What We Will Upload",
+  "sources": [
+    {
+      "source": "CC",
+      "files": [
+        "CCtest.xlsx"
+      ],
+      "received": 152,
+      "accepted": 0,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [],
+      "columnsDetected": [
+        "ccPct"
+      ],
+      "columnsMapped": {
+        "ccPct": "Class Consumption"
+      }
+    },
+    {
+      "source": "RE",
+      "files": [
+        "CM teams  (1).xlsx"
+      ],
+      "received": 225,
+      "accepted": 0,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [],
+      "columnsDetected": [],
+      "columnsMapped": {}
+    },
+    {
+      "source": "FIXED",
+      "files": [
+        "FTtest.xlsx"
+      ],
+      "received": 8066,
+      "accepted": 140,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [],
+      "columnsDetected": [
+        "mentorName",
+        "teamName",
+        "fixedStudents",
+        "fixedOrNot"
+      ],
+      "columnsMapped": {
+        "mentorName": "LP",
+        "teamName": "LP Group",
+        "fixedStudents": "Number of fixed plans",
+        "fixedOrNot": "Fixed or Not"
+      }
+    },
+    {
+      "source": "UP",
+      "files": [
+        "[CM]Middle East M-2 Cumulative Upgrade Rate_CM_20250921_1135(1).xlsx"
+      ],
+      "received": 200,
+      "accepted": 199,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [],
+      "columnsDetected": [
+        "mentorName",
+        "teamName",
+        "upPct"
+      ],
+      "columnsMapped": {
+        "mentorName": "Last CM Name",
+        "teamName": "Last CM Team",
+        "upPct": "M-2累积升舱率M-2 Cumulative Upgrade Rate"
+      }
+    }
+  ],
+  "totals": {
+    "filesProcessed": 5,
+    "received": 8643,
+    "accepted": 216,
+    "updated": 0,
+    "created": 216,
+    "skippedDuplicate": 0,
+    "rejected": 0
+  },
+  "coverage": {
+    "CC": 0,
+    "SC": 0,
+    "UP": 91,
+    "Fixed": 65,
+    "Referral": 0,
+    "Leads": 0
+  },
+  "mentorCount": 216,
+  "teamCount": 215,
+  "errors": [
+    "Unable to detect source type for 1410Leads.xlsx"
+  ],
+  "duration": 55951
+}

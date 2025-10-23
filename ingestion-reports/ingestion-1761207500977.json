@@ -1,0 +1,53 @@
+{
+  "timestamp": "2025-10-23T08:18:20.977Z",
+  "folder": "W:\\WS\\AhmedGabl\\Hackathon_CM\\Excel Sheets of What We Will Upload",
+  "sources": [
+    {
+      "source": "UP",
+      "files": [
+        "[CM]Middle East M-2 Cumulative Upgrade Rate_CM_20250921_1135(1).xlsx"
+      ],
+      "received": 200,
+      "accepted": 199,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [],
+      "columnsDetected": [
+        "mentorName",
+        "teamName",
+        "upPct"
+      ],
+      "columnsMapped": {
+        "mentorName": "Last CM Name",
+        "teamName": "Last CM Team",
+        "upPct": "M-2累积升舱率M-2 Cumulative Upgrade Rate"
+      }
+    }
+  ],
+  "totals": {
+    "filesProcessed": 5,
+    "received": 200,
+    "accepted": 197,
+    "updated": 0,
+    "created": 197,
+    "skippedDuplicate": 0,
+    "rejected": 0
+  },
+  "coverage": {
+    "CC": 0,
+    "SC": 0,
+    "UP": 100,
+    "Fixed": 0,
+    "Referral": 0,
+    "Leads": 0
+  },
+  "mentorCount": 197,
+  "teamCount": 196,
+  "errors": [
+    "Unable to detect source type for 1410Leads.xlsx",
+    "Unable to detect source type for CCtest.xlsx",
+    "Unable to detect source type for CM teams  (1).xlsx",
+    "Unable to detect source type for FTtest.xlsx"
+  ],
+  "duration": 53660
+}

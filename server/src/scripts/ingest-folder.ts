@@ -7,7 +7,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx';
 import { fileURLToPath } from 'url';
 import { autoTransform, type TransformResult } from '../etl/transformers.js';
 import { mergeTransformResults, validateMergedData, type MergeResult } from '../etl/merger.js';
@@ -289,17 +289,23 @@ function createEmptyReport(): IngestionReport {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  ingestFolder()
-    .then(() => {
-      disconnect();
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('\n❌ Fatal Error:', error);
-      disconnect();
-      process.exit(1);
-    });
+// Use fileURLToPath for cross-platform compatibility (Windows backslashes vs Unix forward slashes)
+if (import.meta.url && process.argv[1]) {
+  const currentFile = fileURLToPath(import.meta.url);
+  const calledFile = path.normalize(process.argv[1]);
+
+  if (currentFile === calledFile) {
+    ingestFolder()
+      .then(() => {
+        disconnect();
+        process.exit(0);
+      })
+      .catch((error) => {
+        console.error('\n❌ Fatal Error:', error);
+        disconnect();
+        process.exit(1);
+      });
+  }
 }
 
 export { ingestFolder };

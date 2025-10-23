@@ -18,38 +18,47 @@ export interface ColumnMapping {
 export const DEFAULT_COLUMN_MAPPINGS: Record<string, string[]> = {
   // Common fields
   mentorId: ['mentor_id', 'mentorid', 'id', 'employee_id', 'cm_id', 'agent_id'],
-  mentorName: ['mentor_name', 'name', 'mentor', 'employee', 'cm_name', 'full_name', 'cm', 'agent_name'],
-  teamName: ['team', 'team_name', 'teamname', 'subgroup', 'sub_group', 'group'],
+  mentorName: ['mentor_name', 'name', 'mentor', 'employee', 'cm_name', 'full_name', 'cm', 'agent_name',
+               'last_cm_name', 'lp', 'lp_employee', 'cm name'], // Support user's format
+  teamName: ['team', 'team_name', 'teamname', 'subgroup', 'sub_group', 'group',
+             'last_cm_team', 'lp_group', 'team_', 'team '], // Support user's format with trailing space
   periodDate: ['date', 'period', 'period_date', 'day', 'date_recorded', 'month', 'week'],
 
   // CC source
   ccPct: [
     'cc', 'cc_pct', 'cc%', 'cc_%', 'class_consumption', 'consumption_%', 'consumption_pct',
-    'class_consumption_%', 'class_consumption_pct', 'class_consumption_percentage'
+    'class_consumption_%', 'class_consumption_pct', 'class_consumption_percentage',
+    '>=12', '>= 12', 'number_of_finished_students_>=12_class_consumption' // Support user's format
   ],
   scPct: [
     'sc', 'sc_pct', 'sc%', 'sc_%', 'super_cc', 'scc_%', 'super_consumption',
-    'super_class', 'super_class_%', 'super_class_pct'
+    'super_class', 'super_class_%', 'super_class_pct',
+    'm1-m4_super_class_consumption', 'm1-m4_scc', 'super_class_consumption' // Support user's format
   ],
 
   // UP source
   upPct: [
     'up', 'up_pct', 'up%', 'up_%', 'upgrade', 'upgrade_%', 'upgrade_pct',
-    'cumulative_upgrade_rate', 'upgrade_rate', 'cumulative_upgrade_rate_%'
+    'cumulative_upgrade_rate', 'upgrade_rate', 'cumulative_upgrade_rate_%',
+    'm-2累积升舱率m-2_cumulative_upgrade_rate', 'm-2_cumulative_upgrade_rate',
+    'm-2累积升舱率', 'm2_cumulative_upgrade_rate' // Support user's format with Chinese
   ],
 
   // Fixed source
   fixedPct: ['fixed', 'fixed_pct', 'fixed%', 'fixed_%', 'fixed_rate', 'fixed_rate_%'],
   fixedStudents: ['fixed_students', 'fixed_count', 'fixed_plans', 'number_of_fixed_plans'],
   totalStudents: ['total_students', 'total', 'student_count', 'students'],
+  fixedOrNot: ['fixed_or_not', 'fixed or not', 'is_fixed', 'isfixed'], // Boolean column for per-student fixed status
 
   // Referral source
   referralLeads: ['leads', 'referral_leads', 'total_referrals', 'referrals', 'referral_lead_generated'],
-  referralShowups: ['showups', 'referral_showups', 'appointments', 'shows', 'show_ups', 'referral_show_ups'],
+  referralShowups: ['showups', 'referral_showups', 'appointments', 'shows', 'show_ups', 'referral_show_ups',
+                   'show up', 'show_up', 'show up %', 'show up%'], // Support user's format
   referralPaid: ['paid', 'referral_paid', 'conversions', 'converted', 'referral_conversions'],
   referralAchievementPct: [
     'achievement', 'achievement%', 'achievement_pct', 'achievement_%',
-    'referral_achievement', 'referral_achievement_%', 'referral_achievement_pct'
+    'referral_achievement', 'referral_achievement_%', 'referral_achievement_pct',
+    'leads_ach%', 'leads_ach_%', 'leads_ach_pct', 'leads ach%' // Support user's format
   ],
 
   // All Leads source
@@ -136,19 +145,23 @@ export function detectSourceType(headers: string[]): SourceType | null {
 
   // Check for signature fields
   const hasCC = normalizedHeaders.some(h =>
-    h.includes('class_consumption') || h.includes('cc_pct') || h.includes('cc%')
+    h.includes('class_consumption') || h.includes('cc_pct') || h.includes('cc%') ||
+    (h.includes('12') && h.includes('class_consumption')) || h === '>=12' || h === '12'
   );
   const hasSC = normalizedHeaders.some(h =>
-    h.includes('super_cc') || h.includes('sc_pct') || h.includes('sc%')
+    h.includes('super_cc') || h.includes('sc_pct') || h.includes('sc%') ||
+    h.includes('super_class_consumption') || h.includes('super_class')
   );
   const hasFixed = normalizedHeaders.some(h =>
-    h.includes('fixed') && (h.includes('pct') || h.includes('%') || h.includes('rate'))
+    (h.includes('fixed') && (h.includes('pct') || h.includes('%') || h.includes('rate'))) ||
+    (h.includes('fixed') && (h.includes('or') || h.includes('not'))) // Student-level: "Fixed or Not"
   );
   const hasUpgrade = normalizedHeaders.some(h =>
     h.includes('upgrade') || h.includes('cumulative_upgrade_rate')
   );
   const hasReferral = normalizedHeaders.some(h =>
-    h.includes('referral') || h.includes('showup') || h.includes('achievement')
+    h.includes('referral') || h.includes('showup') || h.includes('achievement') ||
+    h.includes('show_up') || (h === 'leads' || h.includes('leads_ach'))
   );
   const hasLeads = normalizedHeaders.some(h =>
     h.includes('recovered') || h.includes('unrecovered') || h.includes('all_leads')
