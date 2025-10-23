@@ -10,7 +10,7 @@
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts",
-    "seed:prod": "node dist/seed.js",
+    "seed:prod": "node dist/prisma/seed.js",
     "generate": "prisma generate",
     "postinstall": "prisma generate",
     "lint": "eslint src --ext .ts",
