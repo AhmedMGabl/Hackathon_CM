@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && tsc-alias",
+    "build": "tsc && tsc-alias && tsc prisma/seed.ts --outDir dist --esModuleInterop --resolveJsonModule --skipLibCheck",
     "start": "node dist/index.js",
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts",
+    "seed:prod": "node dist/seed.js",
     "generate": "prisma generate",
     "postinstall": "prisma generate",
     "lint": "eslint src --ext .ts",
