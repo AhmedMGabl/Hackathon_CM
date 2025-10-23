@@ -25,7 +25,9 @@
       "Bash(npm run ingest:folder:*)",
       "Bash(timeout 30 npm run ingest:folder:*)",
       "Bash(npx tsx:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(npm run aggregate:*)"
     ],
     "deny": [],
     "ask": []

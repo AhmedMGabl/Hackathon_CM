@@ -257,13 +257,16 @@ router.get('/', authenticate, async (req, res, next) => {
       ];
     }
 
-    // Get latest period date
-    const latestStats = await prisma.mentorStats.findFirst({
-      orderBy: { periodDate: 'desc' },
-      select: { periodDate: true },
+    // Get period date with MOST stats (not just latest timestamp)
+    // This handles cases where data is fragmented across multiple upload timestamps
+    const periodWithMostStats = await prisma.mentorStats.groupBy({
+      by: ['periodDate'],
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 1,
     });
 
-    if (!latestStats) {
+    if (!periodWithMostStats.length) {
       return res.json({
         success: true,
         data: [],
@@ -271,7 +274,7 @@ router.get('/', authenticate, async (req, res, next) => {
       });
     }
 
-    const periodDate = latestStats.periodDate;
+    const periodDate = periodWithMostStats[0].periodDate;
 
     // Fetch mentors with their latest stats
     const mentors = await prisma.mentor.findMany({
@@ -346,12 +349,14 @@ router.get('/underperformers', authenticate, async (req, res, next) => {
 
     const { scoreThreshold, maxTargetsHit, limit, teamId } = parsed.data;
 
-    const latestStats = await prisma.mentorStats.findFirst({
-      orderBy: { periodDate: 'desc' },
-      select: { periodDate: true },
+    const periodWithMostStats = await prisma.mentorStats.groupBy({
+      by: ['periodDate'],
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 1,
     });
 
-    if (!latestStats) {
+    if (!periodWithMostStats.length) {
       return res.json({
         success: true,
         data: {
@@ -361,6 +366,8 @@ router.get('/underperformers', authenticate, async (req, res, next) => {
         },
       });
     }
+
+    const latestStats = { periodDate: periodWithMostStats[0].periodDate };
 
     const whereClause: any = {
       periodDate: latestStats.periodDate,

@@ -1,12 +1,18 @@
 # Data Upload & Dashboard Guide
 
-## ✅ FIXED - Data is Now Available!
+## ✅ FIXED - Dashboard Now Shows Data!
 
-Your data has been successfully ingested and aggregated:
+**Issue**: Dashboard showed 0 mentors despite having data in database.
+
+**Root Cause**: Data was fragmented across multiple timestamps from different Excel uploads. The API was looking for the "latest" timestamp which only had 2 mentors, instead of the date with the most complete data (147 mentors).
+
+**Solution Applied**: Updated API to query the period date with the MOST mentor stats, not just the latest timestamp.
+
+**Current Data Status**:
 - **218 mentors** from your Excel files
 - **20 teams**
-- **1,625 metric records**
-- **Latest date**: Oct 23, 2025
+- **1,909 aggregated stats** across multiple upload timestamps
+- **Primary date with most data**: 147 mentors
 
 ---
 
@@ -52,35 +58,47 @@ After login, you will see:
 
 ---
 
-## ⚠️ Why 1410Leads.xlsx Doesn't Work
+## ⚠️ Why 1410Leads.xlsx Cannot Be Processed
 
 ### The Issue:
-This file contains **student-level** raw data, not mentor-aggregated data:
+This file contains **student-level** raw data (one row per student), not **mentor-aggregated** data (one row per mentor with totals).
 
+**File Structure:**
 ```
-Columns: Student ID | LP Group | LP | Fixed or Not | ...
-Each row = 1 student (not 1 mentor)
+Student ID | LP Group | LP (Mentor) | Fixed or Not | Recovery Status | ...
+Each row = individual student record
 ```
 
-### What We Expected:
-Mentor-aggregated data with one row per mentor:
+**Expected Structure:**
+```
+Mentor Name | Total Leads | Recovered | Unrecovered | Conversion % | ...
+Each row = mentor with aggregated totals
+```
 
-```
-Columns: Mentor Name | Total Leads | Recovered | Unrecovered | ...
-Each row = 1 mentor with their totals
-```
+### Why This Matters:
+The ingestion system is designed to process mentor-level metrics directly. Student-level data would require aggregation logic (grouping by mentor, calculating totals) which is not currently implemented in the upload pipeline.
 
 ### Solutions:
 
-**Option 1**: Transform the file in Excel (recommended)
-1. Create a pivot table grouping by "LP" (mentor name)
-2. Sum up: Total students, Recovered, Unrecovered
-3. Export as new sheet with mentor-level data
-4. Upload the transformed file
+**✅ Option 1: Transform in Excel (RECOMMENDED)**
+1. Open 1410Leads.xlsx
+2. Create a Pivot Table:
+   - Rows: LP (mentor name)
+   - Values: Count of Student ID (Total Leads)
+   - Values: Count where Recovery Status = "Recovered"
+   - Values: Count where Recovery Status = "Unrecovered"
+3. Calculate Conversion % = Recovered / Total × 100
+4. Export pivot table as new sheet
+5. Upload the transformed file to "All Leads & Recovery" source type
 
-**Option 2**: Skip this file
-- The system works fine without it
-- You already have referral data from "CM teams (1).xlsx"
+**Option 2: Skip This File**
+- The dashboard works fine without this data
+- You already have:
+  - CC% and SC% from CCtest.xlsx ✅
+  - Upload additional files (FTtest.xlsx, CM teams, Upgrade Rate) for complete metrics
+
+**Option 3: Manual Data Entry**
+- If you only need a few mentors' lead data, add manually via the Mentors page (if implemented)
 
 ---
 
