@@ -15,7 +15,8 @@
     "postinstall": "prisma generate",
     "lint": "eslint src --ext .ts",
     "test": "vitest",
-    "ingest:folder": "tsx src/scripts/ingest-folder.ts"
+    "ingest:folder": "tsx src/scripts/ingest-folder.ts",
+    "aggregate": "tsx src/scripts/post-ingestion.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
