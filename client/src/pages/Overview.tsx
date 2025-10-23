@@ -68,8 +68,8 @@ export default function Overview() {
   const bottomPerformers = sortedByScore.slice(-5).reverse();
 
   const comparisonData = [
-    ...topPerformers.map((m) => ({ name: m.firstName + ' ' + m.lastName, score: m.weightedScore || 0, type: 'top' })),
-    ...bottomPerformers.map((m) => ({ name: m.firstName + ' ' + m.lastName, score: m.weightedScore || 0, type: 'bottom' })),
+    ...topPerformers.map((m) => ({ name: m.mentorName || 'Unknown', score: m.weightedScore || 0, type: 'top' })),
+    ...bottomPerformers.map((m) => ({ name: m.mentorName || 'Unknown', score: m.weightedScore || 0, type: 'bottom' })),
   ];
 
   if (loading) {
