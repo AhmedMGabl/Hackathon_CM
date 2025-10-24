@@ -5,18 +5,18 @@
 
 export const tokens = {
   colors: {
-    // Brand
+    // Brand (Professional blue - less saturated)
     primary: {
-      50: '#eff6ff',
-      100: '#dbeafe',
-      200: '#bfdbfe',
-      300: '#93c5fd',
-      400: '#60a5fa',
-      500: '#3b82f6',
-      600: '#2563eb', // Primary brand color
-      700: '#1d4ed8',
-      800: '#1e40af',
-      900: '#1e3a8a',
+      50: '#f0f4f8',
+      100: '#d9e2ec',
+      200: '#bcccdc',
+      300: '#9fb3c8',
+      400: '#829ab1',
+      500: '#627d98', // Professional slate blue
+      600: '#486581', // Primary brand color (less saturated)
+      700: '#334e68',
+      800: '#243b53',
+      900: '#102a43',
     },
 
     // Status colors
@@ -74,12 +74,12 @@ export const tokens = {
       950: '#020617',
     },
 
-    // Dark mode surface (neutral grays, no color tint)
+    // Professional dark theme (subtle, not harsh black)
     surface: {
-      dark: '#0f0f0f',      // Very dark neutral gray (main background)
-      darker: '#0a0a0a',    // Even darker neutral
-      card: '#1a1a1a',      // Dark neutral gray for cards
-      elevated: '#252525',  // Slightly lighter for hover/elevated state
+      dark: '#1a1d23',      // Soft dark blue-gray (main background)
+      darker: '#12141a',    // Deeper shade
+      card: '#22262e',      // Card background with subtle contrast
+      elevated: '#2a2f38',  // Elevated elements (modals, dropdowns)
     },
   },
 

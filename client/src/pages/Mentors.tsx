@@ -100,10 +100,13 @@ export default function Mentors() {
     async function loadMentors() {
       try {
         setLoading(true);
+        console.log('[Mentors] Fetching mentors...');
         const response = await mentorApi.list({ limit: 200 });
+        console.log('[Mentors] API response:', response);
+        console.log('[Mentors] Data length:', response.data?.length);
         setMentors(response.data ?? []);
       } catch (error) {
-        console.error('Failed to load mentors', error);
+        console.error('[Mentors] Failed to load mentors:', error);
       } finally {
         setLoading(false);
       }
