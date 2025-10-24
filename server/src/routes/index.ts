@@ -10,6 +10,7 @@ import alertRoutes from './alerts.js';
 import teamRoutes from './teams.js';
 import aiRoutes from './ai.js';
 import meetingRoutes from './meetings.js';
+import googleSheetsRoutes from './google-sheets.js';
 
 const router = Router();
 
@@ -46,5 +47,8 @@ router.use('/api/ai', aiRoutes);
 
 // Meeting endpoints (auth required, admin/super_admin only)
 router.use('/api/meetings', meetingRoutes);
+
+// Google Sheets endpoints (auth required, SUPER_ADMIN only)
+router.use('/api/google-sheets', googleSheetsRoutes);
 
 export default router;

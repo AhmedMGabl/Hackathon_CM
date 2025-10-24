@@ -1,0 +1,144 @@
+{
+  "timestamp": "2025-10-24T07:57:11.542Z",
+  "folder": "W:\\WS\\AhmedGabl\\Hackathon_CM\\Excel Sheets of What We Will Upload",
+  "sources": [
+    {
+      "source": "CC",
+      "files": [
+        "CCtest.xlsx"
+      ],
+      "received": 148,
+      "accepted": 140,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [
+        {
+          "file": "CCtest.xlsx",
+          "row": 40,
+          "reason": "Missing CC%"
+        },
+        {
+          "file": "CCtest.xlsx",
+          "row": 73,
+          "reason": "Missing CC%"
+        },
+        {
+          "file": "CCtest.xlsx",
+          "row": 98,
+          "reason": "Missing CC%"
+        },
+        {
+          "file": "CCtest.xlsx",
+          "row": 129,
+          "reason": "Missing CC%"
+        }
+      ],
+      "columnsDetected": [
+        "mentorName",
+        "teamName",
+        "ccPct",
+        "scPct"
+      ],
+      "columnsMapped": {
+        "mentorName": "Name",
+        "teamName": "Team ",
+        "ccPct": ">=12",
+        "scPct": "M1-M4 Super_class_consumption"
+      }
+    },
+    {
+      "source": "RE",
+      "files": [
+        "CM teams  (1).xlsx"
+      ],
+      "received": 223,
+      "accepted": 196,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [],
+      "columnsDetected": [
+        "mentorName",
+        "teamName",
+        "referralLeads",
+        "referralShowups",
+        "referralPaid",
+        "referralAchievementPct"
+      ],
+      "columnsMapped": {
+        "mentorName": "CM Name",
+        "teamName": "Team",
+        "referralLeads": "leads",
+        "referralShowups": "Show up",
+        "referralPaid": "Paid",
+        "referralAchievementPct": "leads ach%"
+      }
+    },
+    {
+      "source": "FIXED",
+      "files": [
+        "FTtest.xlsx"
+      ],
+      "received": 8066,
+      "accepted": 140,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [],
+      "columnsDetected": [
+        "mentorName",
+        "teamName",
+        "fixedStudents",
+        "fixedOrNot"
+      ],
+      "columnsMapped": {
+        "mentorName": "LP",
+        "teamName": "LP Group",
+        "fixedStudents": "Number of fixed plans",
+        "fixedOrNot": "Fixed or Not"
+      }
+    },
+    {
+      "source": "UP",
+      "files": [
+        "[CM]Middle East M-2 Cumulative Upgrade Rate_CM_20250921_1135(1).xlsx"
+      ],
+      "received": 200,
+      "accepted": 199,
+      "updated": 0,
+      "skippedDuplicate": 0,
+      "rejected": [],
+      "columnsDetected": [
+        "mentorName",
+        "teamName",
+        "upPct"
+      ],
+      "columnsMapped": {
+        "mentorName": "Last CM Name",
+        "teamName": "Last CM Team",
+        "upPct": "M-2累积升舱率M-2 Cumulative Upgrade Rate"
+      }
+    }
+  ],
+  "totals": {
+    "filesProcessed": 5,
+    "received": 8637,
+    "accepted": 218,
+    "updated": 0,
+    "created": 218,
+    "skippedDuplicate": 0,
+    "rejected": 0
+  },
+  "coverage": {
+    "CC": 64,
+    "SC": 64,
+    "UP": 90,
+    "Fixed": 64,
+    "Referral": 89,
+    "Leads": 0
+  },
+  "mentorCount": 218,
+  "teamCount": 217,
+  "errors": [
+    "Unable to detect source type for 1410Leads.xlsx"
+  ],
+  "duration": 61373
+}

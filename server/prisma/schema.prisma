@@ -43,10 +43,11 @@ model Team {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users   User[]
-  mentors Mentor[]
-  targets Target[]
-  config  Config?
+  users             User[]
+  mentors           Mentor[]
+  targets           Target[]
+  config            Config?
+  googleSheetsConfig GoogleSheetsConfig?
 
   @@index([name])
 }
@@ -453,5 +454,38 @@ model MeetingAttendee {
   @@index([meetingId])
   @@index([mentorId])
   @@index([emailSent, emailReplied])
+}
+
+// Google Sheets Integration Configuration
+model GoogleSheetsConfig {
+  id                 String   @id @default(cuid())
+  teamId             String?  @unique // null = global config
+  team               Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  // Authentication
+  apiKey             String?  // Simple API key (read-only)
+  serviceAccountJson String?  // Service account JSON (full access)
+
+  // Sheet configuration
+  spreadsheetId      String?  // Google Sheets ID from URL
+  ccRange            String?  // e.g., "CC Data!A1:Z1000"
+  fixedRange         String?  // e.g., "Fixed!A1:Z1000"
+  upgradeRange       String?  // e.g., "Upgrade!A1:Z1000"
+  referralRange      String?  // e.g., "Referral!A1:Z1000"
+  allLeadsRange      String?  // e.g., "All Leads!A1:Z1000"
+  teamsRange         String?  // e.g., "Teams!A1:Z1000"
+
+  // Sync settings
+  autoSync           Boolean  @default(false) // Enable automatic sync
+  syncIntervalHours  Int      @default(24)    // How often to sync
+  lastSyncAt         DateTime?
+  lastSyncStatus     String?  // "success", "failed", "partial"
+  lastSyncError      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([autoSync, lastSyncAt])
 }
 

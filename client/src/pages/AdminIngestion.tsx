@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import GoogleSheetsConfig from '../components/GoogleSheetsConfig';
 
 interface FileState {
   file: File | null;
@@ -200,8 +201,13 @@ export default function AdminIngestion() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Data Ingestion</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Upload Excel files to import mentor performance data
+          Upload Excel files or configure automatic sync from Google Sheets
         </p>
+      </div>
+
+      {/* Google Sheets Configuration */}
+      <div className="mb-8">
+        <GoogleSheetsConfig />
       </div>
 
       {/* Upload Section */}

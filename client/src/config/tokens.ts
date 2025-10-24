@@ -74,12 +74,12 @@ export const tokens = {
       950: '#020617',
     },
 
-    // Dark mode surface
+    // Dark mode surface (neutral grays, no color tint)
     surface: {
-      dark: '#0A0E27',      // Very dark blue-grey (MAIN BACKGROUND - NO BLUE!)
-      darker: '#06080f',
-      card: '#1A1F3A',      // Dark slate for cards
-      elevated: '#252B4A',  // Hover/elevated state
+      dark: '#0f0f0f',      // Very dark neutral gray (main background)
+      darker: '#0a0a0a',    // Even darker neutral
+      card: '#1a1a1a',      // Dark neutral gray for cards
+      elevated: '#252525',  // Slightly lighter for hover/elevated state
     },
   },
 
