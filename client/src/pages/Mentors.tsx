@@ -95,18 +95,21 @@ export default function Mentors() {
   const [mentors, setMentors] = useState<MentorListItem[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ABOVE' | 'WARNING' | 'BELOW'>('ALL');
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadMentors() {
       try {
         setLoading(true);
+        setApiError(null);
         console.log('[Mentors] Fetching mentors...');
         const response = await mentorApi.list({ limit: 200 });
         console.log('[Mentors] API response:', response);
         console.log('[Mentors] Data length:', response.data?.length);
         setMentors(response.data ?? []);
-      } catch (error) {
+      } catch (error: any) {
         console.error('[Mentors] Failed to load mentors:', error);
+        setApiError(error?.message || 'Failed to load mentors. Please check console for details.');
       } finally {
         setLoading(false);
       }
@@ -397,11 +400,24 @@ export default function Mentors() {
           </div>
         </section>
 
+        {apiError && (
+          <div style={{
+            background: `${tokens.colors.danger[900]}30`,
+            border: `1px solid ${tokens.colors.danger[700]}`,
+            borderRadius: tokens.radii.md,
+            padding: '16px',
+            marginBottom: '24px',
+            color: tokens.colors.danger[400]
+          }}>
+            <strong>Error loading mentors:</strong> {apiError}
+          </div>
+        )}
+
         {loading ? (
           <div style={{ textAlign: 'center', padding: '48px', color: tokens.colors.neutral[500] }}>Loading mentors…</div>
         ) : groupedMentors.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px', color: tokens.colors.neutral[500] }}>
-            No mentors match the selected filters.
+            {mentors.length === 0 ? 'No mentors found in database. Please run data ingestion first.' : 'No mentors match the selected filters.'}
           </div>
         ) : (
           groupedMentors.map((group) => (
