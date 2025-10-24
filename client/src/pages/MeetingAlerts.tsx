@@ -203,7 +203,7 @@ export default function MeetingAlerts() {
       <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-blue-500">CMetrics</h1>
+            <h1 className="text-2xl font-bold text-slate-200">CMetrics</h1>
             <p className="text-sm text-slate-400">Meeting Prep</p>
           </div>
           <div className="flex gap-4 items-center">
@@ -233,13 +233,13 @@ export default function MeetingAlerts() {
                     value={meetingTitle}
                     onChange={(e) => setMeetingTitle(e.target.value)}
                     placeholder="e.g., Q1 Performance Review"
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Score Threshold: <span className="text-blue-400 font-bold">{scoreThreshold}%</span>
+                    Score Threshold: <span className="text-slate-300 font-bold">{scoreThreshold}%</span>
                   </label>
                   <input
                     type="range"
@@ -248,7 +248,7 @@ export default function MeetingAlerts() {
                     min="0"
                     max="100"
                     step="5"
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-slate-500"
                   />
                   <div className="flex justify-between text-xs text-slate-500 mt-1">
                     <span>0%</span>
@@ -263,7 +263,7 @@ export default function MeetingAlerts() {
                     type="datetime-local"
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
                   />
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function MeetingAlerts() {
                 <div className="flex gap-2">
                   <button
                     onClick={selectAll}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="px-3 py-1 text-sm bg-slate-600 text-white rounded hover:bg-slate-700"
                   >
                     Select All
                   </button>
@@ -342,7 +342,7 @@ export default function MeetingAlerts() {
               <button
                 onClick={handleCreateMeeting}
                 disabled={creating || selectedMentors.size === 0}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creating ? 'Generating Prep Materials...' : `Create Meeting (${selectedMentors.size} selected)`}
               </button>
@@ -361,7 +361,7 @@ export default function MeetingAlerts() {
                   <button
                     onClick={handleSendEmails}
                     disabled={sendingEmails}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {sendingEmails ? (
                       <>
@@ -454,7 +454,7 @@ export default function MeetingAlerts() {
 
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-semibold text-blue-400 mb-2">SUMMARY</h4>
+                    <h4 className="text-sm font-semibold text-slate-300 mb-2">SUMMARY</h4>
                     <p className="text-slate-300">{prep.summary}</p>
                   </div>
 
@@ -493,7 +493,7 @@ export default function MeetingAlerts() {
 
                   {prep.strengths.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-blue-400 mb-2">STRENGTHS</h4>
+                      <h4 className="text-sm font-semibold text-slate-300 mb-2">STRENGTHS</h4>
                       <ul className="list-disc list-inside space-y-1 text-slate-300">
                         {prep.strengths.map((strength, i) => (
                           <li key={i}>{strength}</li>
