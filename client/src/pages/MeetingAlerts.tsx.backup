@@ -217,30 +217,30 @@ export default function MeetingAlerts() {
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
         {!prepResults ? (
           <>
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '30px', fontWeight: 700, color: tokens.colors.neutral[100], marginBottom: '8px' }}>Schedule Performance Meetings</h2>
-              <p style={{ color: tokens.colors.neutral[400] }}>Select underperforming mentors and generate AI-powered meeting prep materials</p>
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold text-slate-100 mb-2">Schedule Performance Meetings</h2>
+              <p className="text-slate-400">Select underperforming mentors and generate AI-powered meeting prep materials</p>
             </div>
 
             {/* Configuration */}
-            <div style={{ background: tokens.colors.surface.card, borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, color: tokens.colors.neutral[100], marginBottom: '16px' }}>Meeting Configuration</h3>
+            <div className="bg-slate-800 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Meeting Configuration</h3>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: tokens.colors.neutral[300], marginBottom: '8px' }}>Meeting Title</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Meeting Title</label>
                   <input
                     type="text"
                     value={meetingTitle}
                     onChange={(e) => setMeetingTitle(e.target.value)}
                     placeholder="e.g., Q1 Performance Review"
-                    style={{ width: '100%', padding: '8px 12px', background: tokens.colors.surface.elevated, border: `1px solid ${tokens.colors.neutral[700]}`, borderRadius: '8px', color: tokens.colors.neutral[100], outline: 'none' }}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: tokens.colors.neutral[300], marginBottom: '8px' }}>
-                    Score Threshold: <span style={{ fontWeight: 700 }}>{scoreThreshold}%</span>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Score Threshold: <span className="text-slate-300 font-bold">{scoreThreshold}%</span>
                   </label>
                   <input
                     type="range"
@@ -249,9 +249,9 @@ export default function MeetingAlerts() {
                     min="0"
                     max="100"
                     step="5"
-                    style={{ width: '100%', height: '8px', background: tokens.colors.neutral[700], borderRadius: '8px', cursor: 'pointer' }}
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-slate-500"
                   />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: tokens.colors.neutral[500], marginTop: '4px' }}>
+                  <div className="flex justify-between text-xs text-slate-500 mt-1">
                     <span>0%</span>
                     <span>Show mentors below this score</span>
                     <span>100%</span>
@@ -259,63 +259,63 @@ export default function MeetingAlerts() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: tokens.colors.neutral[300], marginBottom: '8px' }}>Scheduled Date (Optional)</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Scheduled Date (Optional)</label>
                   <input
                     type="datetime-local"
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', background: tokens.colors.surface.elevated, border: `1px solid ${tokens.colors.neutral[700]}`, borderRadius: '8px', color: tokens.colors.neutral[100], outline: 'none' }}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
                   />
                 </div>
               </div>
             </div>
 
             {/* Mentor Selection */}
-            <div style={{ background: tokens.colors.surface.card, borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, color: tokens.colors.neutral[100] }}>
+            <div className="bg-slate-800 rounded-lg p-6 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-100">
                   Select Mentors ({filteredMentors.length} below {scoreThreshold}%)
                 </h3>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="flex gap-2">
                   <button
                     onClick={selectAll}
-                    style={{ padding: '6px 12px', fontSize: '14px', background: tokens.colors.neutral[700], color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                    className="px-3 py-1 text-sm bg-slate-600 text-white rounded hover:bg-slate-700"
                   >
                     Select All
                   </button>
                   <button
                     onClick={clearAll}
-                    style={{ padding: '6px 12px', fontSize: '14px', background: tokens.colors.neutral[800], color: tokens.colors.neutral[300], border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                    className="px-3 py-1 text-sm bg-slate-600 text-slate-200 rounded hover:bg-slate-500"
                   >
                     Clear
                   </button>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' }}>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {filteredMentors.length === 0 ? (
-                  <p style={{ color: tokens.colors.neutral[400], textAlign: 'center', padding: '32px' }}>No mentors below threshold</p>
+                  <p className="text-slate-400 text-center py-8">No mentors below threshold</p>
                 ) : (
                   filteredMentors.map(mentor => (
                     <label
                       key={mentor.id}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: tokens.colors.surface.elevated, borderRadius: '8px', cursor: 'pointer' }}
+                      className="flex items-center gap-3 p-3 bg-slate-700 rounded-lg hover:bg-slate-600 cursor-pointer"
                     >
                       <input
                         type="checkbox"
                         checked={selectedMentors.has(mentor.id)}
                         onChange={() => toggleMentor(mentor.id)}
-                        style={{ width: '16px', height: '16px' }}
+                        className="w-4 h-4"
                       />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 500, color: tokens.colors.neutral[100] }}>{mentor.firstName} {mentor.lastName}</span>
-                          <div style={{ display: 'flex', gap: '12px', fontSize: '14px' }}>
-                            <span style={{ color: tokens.colors.neutral[400] }}>Score: <span style={{ color: tokens.colors.warning[400] }}>{(mentor.weightedScore || 0).toFixed(1)}%</span></span>
-                            <span style={{ color: tokens.colors.neutral[400] }}>Targets: <span style={{ color: tokens.colors.warning[400] }}>{mentor.targetsHit}/4</span></span>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-slate-100">{mentor.firstName} {mentor.lastName}</span>
+                          <div className="flex gap-3 text-sm">
+                            <span className="text-slate-400">Score: <span className="text-amber-400">{(mentor.weightedScore || 0).toFixed(1)}%</span></span>
+                            <span className="text-slate-400">Targets: <span className="text-amber-400">{mentor.targetsHit}/4</span></span>
                           </div>
                         </div>
-                        <div style={{ fontSize: '12px', color: tokens.colors.neutral[400], marginTop: '4px' }}>
+                        <div className="text-xs text-slate-400 mt-1">
                           CC: {(mentor.avgCcPct || 0).toFixed(1)}% | SC: {(mentor.avgScPct || 0).toFixed(1)}% | UP: {(mentor.avgUpPct || 0).toFixed(1)}% | Fixed: {(mentor.avgFixedPct || 0).toFixed(1)}%
                         </div>
                       </div>
@@ -327,23 +327,23 @@ export default function MeetingAlerts() {
 
             {/* Error */}
             {error && (
-              <div style={{ background: `${tokens.colors.danger[900]}20`, border: `1px solid ${tokens.colors.danger[700]}`, borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
-                <p style={{ color: tokens.colors.danger[400] }}>{error}</p>
+              <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-6">
+                <p className="text-red-400">{error}</p>
               </div>
             )}
 
             {/* Create Button */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => window.location.href = '/overview'}
-                style={{ padding: '12px 24px', background: tokens.colors.neutral[800], color: tokens.colors.neutral[200], border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                className="px-6 py-3 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateMeeting}
                 disabled={creating || selectedMentors.size === 0}
-                style={{ padding: '12px 24px', background: creating || selectedMentors.size === 0 ? tokens.colors.neutral[700] : tokens.colors.neutral[600], color: 'white', border: 'none', borderRadius: '8px', cursor: creating || selectedMentors.size === 0 ? 'not-allowed' : 'pointer', opacity: creating || selectedMentors.size === 0 ? 0.5 : 1 }}
+                className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creating ? 'Generating Prep Materials...' : `Create Meeting (${selectedMentors.size} selected)`}
               </button>
@@ -352,10 +352,10 @@ export default function MeetingAlerts() {
         ) : (
           <>
             {/* Prep Results */}
-            <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="mb-6 flex justify-between items-center">
               <div>
-                <h2 style={{ fontSize: '30px', fontWeight: 700, color: tokens.colors.neutral[100], marginBottom: '8px' }}>{meetingTitle}</h2>
-                <p style={{ color: tokens.colors.neutral[400] }}>Meeting prep for {prepResults.length} mentors</p>
+                <h2 className="text-3xl font-bold text-slate-100 mb-2">{meetingTitle}</h2>
+                <p className="text-slate-400">Meeting prep for {prepResults.length} mentors</p>
               </div>
               <div className="flex gap-3">
                 {!emailResults && (
@@ -450,19 +450,19 @@ export default function MeetingAlerts() {
             )}
 
             {prepResults.map((prep, idx) => (
-              <div key={prep.mentorId} style={{ background: tokens.colors.surface.card, borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '20px', fontWeight: 700, color: tokens.colors.neutral[100], marginBottom: '16px' }}>{idx + 1}. {prep.mentorName}</h3>
+              <div key={prep.mentorId} className="bg-slate-800 rounded-lg p-6 mb-6">
+                <h3 className="text-xl font-bold text-slate-100 mb-4">{idx + 1}. {prep.mentorName}</h3>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="space-y-4">
                   <div>
-                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.neutral[300], marginBottom: '8px' }}>SUMMARY</h4>
-                    <p style={{ color: tokens.colors.neutral[300] }}>{prep.summary}</p>
+                    <h4 className="text-sm font-semibold text-slate-300 mb-2">SUMMARY</h4>
+                    <p className="text-slate-300">{prep.summary}</p>
                   </div>
 
                   {prep.missedTargets.length > 0 && (
                     <div>
-                      <h4 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.danger[400], marginBottom: '8px' }}>MISSED TARGETS</h4>
-                      <ul style={{ listStyle: 'disc', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px', color: tokens.colors.neutral[300] }}>
+                      <h4 className="text-sm font-semibold text-red-400 mb-2">MISSED TARGETS</h4>
+                      <ul className="list-disc list-inside space-y-1 text-slate-300">
                         {prep.missedTargets.map((target, i) => (
                           <li key={i}>{target}</li>
                         ))}
@@ -472,8 +472,8 @@ export default function MeetingAlerts() {
 
                   {prep.talkingPoints.length > 0 && (
                     <div>
-                      <h4 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.warning[400], marginBottom: '8px' }}>TALKING POINTS</h4>
-                      <ul style={{ listStyle: 'disc', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px', color: tokens.colors.neutral[300] }}>
+                      <h4 className="text-sm font-semibold text-amber-400 mb-2">TALKING POINTS</h4>
+                      <ul className="list-disc list-inside space-y-1 text-slate-300">
                         {prep.talkingPoints.map((point, i) => (
                           <li key={i}>{point}</li>
                         ))}
@@ -483,8 +483,8 @@ export default function MeetingAlerts() {
 
                   {prep.actionItems.length > 0 && (
                     <div>
-                      <h4 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.success[400], marginBottom: '8px' }}>ACTION ITEMS</h4>
-                      <ul style={{ listStyle: 'disc', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px', color: tokens.colors.neutral[300] }}>
+                      <h4 className="text-sm font-semibold text-green-400 mb-2">ACTION ITEMS</h4>
+                      <ul className="list-disc list-inside space-y-1 text-slate-300">
                         {prep.actionItems.map((item, i) => (
                           <li key={i}>{item}</li>
                         ))}
@@ -494,8 +494,8 @@ export default function MeetingAlerts() {
 
                   {prep.strengths.length > 0 && (
                     <div>
-                      <h4 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.neutral[300], marginBottom: '8px' }}>STRENGTHS</h4>
-                      <ul style={{ listStyle: 'disc', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px', color: tokens.colors.neutral[300] }}>
+                      <h4 className="text-sm font-semibold text-slate-300 mb-2">STRENGTHS</h4>
+                      <ul className="list-disc list-inside space-y-1 text-slate-300">
                         {prep.strengths.map((strength, i) => (
                           <li key={i}>{strength}</li>
                         ))}
